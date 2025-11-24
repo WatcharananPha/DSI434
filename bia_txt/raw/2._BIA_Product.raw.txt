@@ -1,0 +1,178 @@
+แบบวิเคราะห์ผลกระทบทางธุรกิจ Business Impact Analysis Form	Unnamed: 1	Unnamed: 2	Unnamed: 3	Unnamed: 4	Unnamed: 5	Unnamed: 6	Unnamed: 7	Unnamed: 8	Unnamed: 9	Unnamed: 10	Unnamed: 11	Unnamed: 12	Unnamed: 13	Unnamed: 14	Unnamed: 15	Unnamed: 16	Unnamed: 17	Unnamed: 18	Unnamed: 19	Unnamed: 20	Unnamed: 21	Unnamed: 22	Unnamed: 23	Unnamed: 24	Unnamed: 25	Unnamed: 26	Unnamed: 27	Unnamed: 28	Unnamed: 29	Unnamed: 30	Unnamed: 31
+																															
+ผู้ประเมิน			ชื่อหน่วยงาน									วันที่ประเมิน																		"ปตท.
+WHA
+PEA
+EGAT"	
+วิธีการประเมิน			ชื่อพื้นที่ประเมิน									ทบทวนครั้งที่																		ปตท.WHAPEAEGAT	
+																															
+" Product & Service
+ผลิตภัณฑ์และบริการ"	"Impact Category
+ประเภทของผลกระทบที่เกิดขึ้น"	Severity of Impact Over Time  ระดับผลกระทบที่เพิ่มขึ้นในแต่ละวัน 										Maximum Tolerable Period of Disruption (MTPD)	"Recovery Time Objective
+(RTO)"	Minimum Business Continuity Objective (MBCO)	"Crisis
+ภัยคุกคาม
+"	Resource ทรัพยากร															
+		1 Hour	4 Hour	8 Hour	12 Hour	24 Hour	3 Days	14 Days	30 Days	รวมคะแนน	การจัดลำดับ					"People
+บุคลากร
+(ปกติ)"	"People
+บุคลากร
+(ฉุกเฉิน)"	"Information
+สารสนเทศและข้อมูล
+(ปกติ)"	"Information
+สารสนเทศและข้อมูล
+(ฉุกเฉิน)"	"Building
+โครงสร้างพื้นฐานทางกายภาพ เช่นอาคาร 
+(ปกติ)"	"Building
+โครงสร้างพื้นฐานทางกายภาพ เช่นอาคาร 
+(ฉุกเฉิน)"	"Equipment
+อุปกรณ์และโภคภัณฑ์
+(ปกติ)
+"	"Equipment
+อุปกรณ์และโภคภัณฑ์
+(ฉุกเฉิน)
+"	"ICT
+ระบบเทคโนโลยีสารสนเทศและการสื่อสาร 
+(ปกติ)"	"ICT
+ระบบเทคโนโลยีสารสนเทศและการสื่อสาร 
+(ฉุกเฉิน)"	"Logistics
+การขนส่งและโลจิสติกส์
+(ปกติ)"	"Logistics
+การขนส่งและโลจิสติกส์
+(ฉุกเฉิน)"	"Finance
+การเงิน
+(ปกติ)"	"Finance
+การเงิน
+(ฉุกเฉิน)"	"Supplier
+หุ้นส่วนและผู้ส่งมอบ
+(ปกติ)"	"Supplier
+หุ้นส่วนและผู้ส่งมอบ
+(ฉุกเฉิน)"
+ควบคุมการผลิตไฟฟ้าและดูแลการปฏิบัติการผลิตให้กับลูกค้า	1. การเงิน	2	2	2	3	4	4	4	4	97	Priority2	24 Hours	24 Hours	50% (80 MW)	"1.Water loss
+2.Steam loss
+3.Power loss
+4.NG loss
+5.ไฟใหม้
+6.Cyber attack
+7.โรคระบาด"	"Operation 9 คน
+Maintenance 4 คน
+Safety 1 คน"	"Operation 16 คน
+Maintenance 4 คน
+Safety 1 คน"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	Control Room	"1.Emergency Control Center (ECC)
+2.CCB"	"คอมพิวเตอร์ 8
+วิทยุสื่อสาร 13
+โทรศัพท์มือถือ 1
+โทรศัพท์ Plant 3
+Hot Line 3"	"วิทยุสื่อสาร 13
+คอมพิวเตอร์ 8
+โทรศัพท์ 4
+ทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด 24 ชม."	"ระบบ VPN
+Internet
+PI"	"ระบบ VPN
+Internet
+PI"	รถยนต์ 1 คัน	รถยนต์ 1 คัน	-	เงินสำรอง	"ปตท.
+WHA
+PEA
+EGAT"	"ปตท.
+WHA
+PEA
+EGAT"
+	2. กฏหมาย กฏระเบียบ ข้อบังคับ และสัญญา / ข้อตกลงระดับของการให้บริการ	2	3	3	3	4	4	4	4	110	Priority1																				
+	3. ความปลอดภัยอาชีวอนามัยของบุคลากร	1	1	1	1	1	1	1	1	36	Priority4																				
+	4. สิ่งแวดล้อม	2	2	2	2	2	2	2	2	72	Priority3																				
+	5. ลูกค้า คู่ค้า	2	3	3	3	4	4	4	4	110	Priority1																				
+	6. กระบวนการทางธุรกิจ และการปฏิบัติการ	2	2	2	2	4	4	4	4	92	Priority2																				
+	7. ชื่อเสียงภาพลักษณ์ต่อองค์กร	1	2	2	3	4	4	4	4	89	Priority2																				
+ควบคุมการผลิตไอน้ำและดูแลการปฏิบัติการผลิตให้กับลูกค้า	1. การเงิน	2	2	2	3	4	4	4	4	97	Priority2	24 Hours	24 Hours	68% (410 t/h)	"1.Water loss
+2.Steam loss
+3.Power loss
+4.NG loss
+5.ไฟใหม้
+6.Cyber attack
+7.โรคระบาด"	"Operation 9 คน
+Maintenance 4 คน
+Safety 1 คน"	"Operation 16 คน
+Maintenance 4 คน
+Safety 1 คน"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	Control Room	"1.Emergency Control Center (ECC)
+2.CCB"	"คอมพิวเตอร์ 8
+วิทยุสื่อสาร 13
+โทรศัพท์มือถือ 1
+โทรศัพท์ Plant 3
+Hot Line 3"	"วิทยุสื่อสาร 13
+คอมพิวเตอร์ 8
+โทรศัพท์ 4
+ทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด 24 ชม."	"ระบบ VPN
+Internet
+PI"	"ระบบ VPN
+Internet
+PI"	รถยนต์ 1 คัน	รถยนต์ 1 คัน	-	เงินสำรอง	"ปตท.
+WHA
+PEA
+EGAT"	"ปตท.
+WHA
+PEA
+EGAT"
+	2. กฏหมาย กฏระเบียบ ข้อบังคับ และสัญญา / ข้อตกลงระดับของการให้บริการ	2	3	3	3	4	4	4	4	110	Priority1																				
+	3. ความปลอดภัยอาชีวอนามัยของบุคลากร	1	1	1	1	1	1	1	1	36	Priority4																				
+	4. สิ่งแวดล้อม	2	2	2	2	2	2	2	2	72	Priority3																				
+	5. ลูกค้า คู่ค้า	2	3	3	3	4	4	4	4	110	Priority1																				
+	6. กระบวนการทางธุรกิจ และการปฏิบัติการ	2	2	2	2	4	4	4	4	92	Priority2																				
+	7. ชื่อเสียงภาพลักษณ์ต่อองค์กร	1	2	2	3	4	4	4	4	89	Priority2																				
+ควบคุมการผลิตน้ำและดูแลการปฏิบัติการผลิตให้กับลูกค้า	1. การเงิน	2	2	2	3	4	4	4	4	97	Priority2	24 Hours	24 Hours	100% (430 m3/h)	"1.Water loss
+2.Steam loss
+3.Power loss
+4.NG loss
+5.ไฟใหม้
+6.Cyber attack
+7.โรคระบาด"	"Operation 9 คน
+Maintenance 4 คน
+Safety 1 คน"	"Operation 16 คน
+Maintenance 4 คน
+Safety 1 คน"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	Control Room	"1.Emergency Control Center (ECC)
+2.CCB"	"คอมพิวเตอร์ 8
+วิทยุสื่อสาร 13
+โทรศัพท์มือถือ 1
+โทรศัพท์ Plant 3
+Hot Line 3"	"วิทยุสื่อสาร 13
+คอมพิวเตอร์ 8
+โทรศัพท์ 4
+ทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด 24 ชม."	"ระบบ VPN
+Internet
+PI"	"ระบบ VPN
+Internet
+PI"	รถยนต์ 1 คัน	รถยนต์ 1 คัน	-	เงินสำรอง	"ปตท.
+WHA
+PEA
+EGAT"	"ปตท.
+WHA
+PEA
+EGAT"
+	2. กฏหมาย กฏระเบียบ ข้อบังคับ และสัญญา / ข้อตกลงระดับของการให้บริการ	2	3	3	3	4	4	4	4	110	Priority1																				
+	3. ความปลอดภัยอาชีวอนามัยของบุคลากร	1	1	1	1	1	1	1	1	36	Priority4																				
+	4. สิ่งแวดล้อม	2	2	2	2	2	2	2	2	72	Priority3																				
+	5. ลูกค้า คู่ค้า	2	3	3	3	4	4	4	4	110	Priority1																				
+	6. กระบวนการทางธุรกิจ และการปฏิบัติการ	2	2	2	2	4	4	4	4	92	Priority2																				
+	7. ชื่อเสียงภาพลักษณ์ต่อองค์กร	1	2	2	3	4	4	4	4	89	Priority2																				

@@ -1,0 +1,176 @@
+python
+import re
+import json
+
+def _clean_header_part(s):
+    """
+    Cleans a header string part by removing quotes, newlines, specific phrases,
+    and Thai characters, then strips whitespace.
+    """
+    s = s.strip()
+    s = s.replace('"', '')
+    s = s.replace('\n', ' ').replace('\r', ' ')
+    s = re.sub(r'\(new countermeasure to reduce threats\)', '', s).strip()
+    # Remove Thai characters (Unicode range U+0E00 to U+0E7F)
+    s = re.sub(r'[\u0E00-\u0E7F]+', '', s).strip() 
+    return s
+
+def _to_snake_case(s):
+    """
+    Converts a string to snake_case.
+    """
+    s = s.lower()
+    s = s.replace('&', 'and')
+    # Replace any non-alphanumeric character (except space or underscore) with a space
+    s = re.sub(r'[^a-z0-9_ ]', ' ', s) 
+    # Replace multiple spaces or spaces with a single underscore
+    s = re.sub(r'\s+', '_', s)         
+    s = s.strip('_') # Trim leading/trailing underscores
+    return s
+
+def convert_tsv_to_json_lines(tsv_string, sheet_name="1.4_RA_Plant_Incident"):
+    json_lines_output = []
+    lines = tsv_string.strip().split('\n')
+
+    if len(lines) < 3: # Minimum of two header rows and one data row required
+        return ""
+
+    header_row1_parts = lines[0].split('\t')
+    header_row2_parts = lines[1].split('\t')
+
+    # Determine the number of columns from the first actual data row
+    # This is crucial for handling inconsistent header lengths or trailing empty columns
+    num_data_cols = len(lines[2].split('\t'))
+
+    # Pad header rows with empty strings if they are shorter than the data rows
+    header_row1_padded = (header_row1_parts + [''] * (num_data_cols - len(header_row1_parts)))[:num_data_cols]
+    header_row2_padded = (header_row2_parts + [''] * (num_data_cols - len(header_row2_parts)))[:num_data_cols]
+
+    final_headers = []
+    # `current_prefix_for_span` stores the snake_cased name of a primary header 
+    # that acts as a prefix for subsequent H2-only cells within its span.
+    current_prefix_for_span = None 
+    key_disambiguation_counter = {} # To handle duplicate keys like 'risk_assessment_r'
+
+    for i in range(num_data_cols):
+        h1_raw = header_row1_padded[i]
+        h2_raw = header_row2_padded[i]
+
+        h1_cleaned_part = _clean_header_part(h1_raw)
+        h2_cleaned_part = _clean_header_part(h2_raw)
+
+        key = None
+        if h1_cleaned_part and not h1_cleaned_part.startswith('Unnamed:'):
+            # This is a new primary header.
+            primary_h1_snake = _to_snake_case(h1_cleaned_part)
+            
+            if h2_cleaned_part:
+                # Example: "Risk Assessment" (H1) + "I" (H2) -> "risk_assessment_i"
+                key = f"{primary_h1_snake}_{_to_snake_case(h2_cleaned_part)}"
+                current_prefix_for_span = primary_h1_snake # This primary starts a span.
+            else:
+                # Example: "No.", "Process", "Mitigation Plan", "Responsible Person", "Target" (H1 only)
+                key = primary_h1_snake
+                # If this primary header is expected to span (like 'Target' for I, L, R), 
+                # keep it as `current_prefix_for_span`. Otherwise, reset.
+                if primary_h1_snake in ['risk_assessment', 'time_frame', 'target']:
+                    current_prefix_for_span = primary_h1_snake
+                else:
+                    current_prefix_for_span = None # Not a spanning prefix for subsequent columns.
+                    
+        elif h2_cleaned_part:
+            # H1 is empty or "Unnamed: X", but H2 has content. This must be a sub-header.
+            if current_prefix_for_span:
+                key = f"{current_prefix_for_span}_{_to_snake_case(h2_cleaned_part)}"
+            else:
+                # This case should ideally not happen if `current_prefix_for_span` is handled correctly
+                # for spanning headers that appear first. If it does, treat H2 as a standalone header.
+                key = _to_snake_case(h2_cleaned_part)
+        # If both h1_cleaned_part and h2_cleaned_part are empty/unnamed, 'key' remains None and
+        # the column is effectively ignored for output.
+
+        if key:
+            # Handle key disambiguation (e.g., multiple 'R's within 'Risk Assessment')
+            key_disambiguation_counter[key] = key_disambiguation_counter.get(key, 0) + 1
+            count = key_disambiguation_counter[key]
+            if count > 1:
+                final_headers.append(f"{key}_{count}")
+            else:
+                final_headers.append(key)
+        else:
+            final_headers.append(None) # This column has no meaningful header and will be skipped
+
+    # Process data rows, starting from the third line (index 2)
+    data_rows = lines[2:]
+    current_row_index = 0
+    for row_data_str in data_rows:
+        row_cells = row_data_str.split('\t')
+        
+        # Trim cells to match the number of headers
+        row_cells_padded = (row_cells + [''] * (num_data_cols - len(row_cells)))[:num_data_cols]
+
+        data_object = {}
+        is_row_empty = True # Assume row is empty until a non-empty cell is found
+        
+        for col_idx, cell_value in enumerate(row_cells_padded):
+            header_key = final_headers[col_idx]
+            if header_key: # Only process if a valid header key exists for this column
+                # Trim leading/trailing spaces and collapse internal newlines to a single space
+                cleaned_value = cell_value.strip().replace('\n', ' ').replace('\r', ' ')
+                data_object[header_key] = cleaned_value
+                if cleaned_value: # If the cleaned value is not empty, the row is not empty
+                    is_row_empty = False
+        
+        # Only add the row to the output if it's not all empty columns
+        if not is_row_empty:
+            current_row_index += 1 # Increment 1-based row index for each valid data row
+            json_line = {
+                "sheet": sheet_name,
+                "row_index": current_row_index,
+                "data": data_object
+            }
+            json_lines_output.append(json.dumps(json_line, ensure_ascii=False))
+
+    return "\n".join(json_lines_output)
+
+# Provided TSV content
+tsv_content = """
+No.	"Product & Service
+ผลิตภัณฑ์และบริการ "	"Process
+กระบวนการผลิต"	"Risk Category
+ประเภทความเสี่ยง"	"Impact Type
+ประเภทผลกระทบ"	"Posible Risk
+ความเสี่ยงที่เป็นไปได้"	"Existing Control 
+มาตรการควบคุมที่มีอยู่"	Risk Assessment	Unnamed: 8	Unnamed: 9	Unnamed: 10	Unnamed: 11	Unnamed: 12	Unnamed: 13	"Mitigation Plan
+(new countermeasure to reduce threats)"	Time Frame	Unnamed: 16	Responsible Person	Target	Unnamed: 19	Unnamed: 20	Unnamed: 21
+							I	L	R	R	MTPD	RTO	MBCO		From	To		I	L	R	R
+1	1. Plant incident	ABCT breaker 5YB-01 trip by relay 87L operate 	Operational Management	5. ลูกค้า คู่ค้า	"1.ไม่สามารถส่งกระแสไฟฟ้าให้กับลูกค้าได้
+2. แรงดันของไอน้ำในระบบลดลง
+
+
+"	"1. มีการประชุมกับลูกค้าเพื่อวางแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+2.มีแผนการตรวจสอบระบบเครื่องจักร ตามระยะเวลาที่กำหนด
+3. มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet
+4.มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+5.มีระบบควบคุมไฟฟ้าโดยอัติโนมัติโดยโปรแกรม PMC
+6.มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง 7.มีระบบควบคุมแรงดันไอน้ำแบบอัตโนมัติ"	2	2	M12	M12	24 ชม	1 ชม	1	1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall                                      2.จัดทีมคณะทำงานลดการเกิด Incident เรื่อง Trip reduction 	Jan	Dec	O&M	1	2	L15	L15
+2	1. Plant incident	CUP1 plant blackout.	Operational Management	5. ลูกค้า คู่ค้า	"1.ไม่สามารถส่งกระแสไฟฟ้าให้กับลูกค้าได้
+2. แรงดันของไอน้ำในระบบลดลง
+"	"1. มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+2.มีแผนการตรวจสอบระบบเครื่องจักร ตามระยะเวลาที่กำหนด
+3. มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet
+4.มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+5.มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง 6.มีระบบควบคุมแรงดันไอน้ำแบบอัตโนมัติ"	3	2	H7	H7	24 ชม	2 ชม	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall
+ 2.จัดทีมคณะทำงานลดการเกิด Incident เรื่อง Trip reduction "	Jan	Dec	O&M	2	2	M12	M12
+3	1. Plant incident	PTTAC 115 kV CB 7YB-01 opened to PTTAC was tripped by alarm reverse power relay	Operational Management	5. ลูกค้า คู่ค้า	"1.ไม่สามารถส่งกระแสไฟฟ้าให้กับลูกค้าได้
+2. แรงดันของไอน้ำในระบบลดลง
+"	"1. มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+2.มีแผนการตรวจสอบระบบเครื่องจักร ตามระยะเวลาที่กำหนด
+3. มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet
+4.มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+5.มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง 6.มีระบบควบคุมแรงดันไอน้ำแบบอัตโนมัติ"	2	2	M12	M12	24 ชม	1 ชม	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.จัดทีมคณะทำงานลดการเกิด Incident เรื่อง Trip reduction "	Jan	Dec	O&M	1	2	L15	L15
+"""
+
+# Convert and print the JSON Lines output
+print(convert_tsv_to_json_lines(tsv_content))

@@ -1,0 +1,25 @@
+{
+  "candidates": [
+    {
+      "id": "U12.1",
+      "name": "ทีม GTG 24ชม.",
+      "map": "u1"
+    },
+    {
+      "id": "U17.1",
+      "name": "ซ่อมบำรุง Sub station",
+      "map": "u2"
+    },
+    {
+      "id": "RESERVE",
+      "name": "งบสำรอง",
+      "map": "reserve"
+    }
+  ],
+  "target_allocation": {
+    "total_budget_thb": 10000000.0,
+    "U12.1_thb": 5000000.0,
+    "U17.1_thb": 3000000.0,
+    "RESERVE_thb": 2000000.0
+  }
+}

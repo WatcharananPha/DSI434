@@ -1,0 +1,332 @@
+python
+import re
+import json
+
+def clean_and_snake_case(text):
+    """
+    Cleans a header string: trims spaces, collapses internal newlines,
+    applies specific replacements for known complex headers, and converts to snake_case.
+    """
+    if not text:
+        return ""
+
+    # Collapse internal newlines to a single space
+    text = re.sub(r'\s*\n\s*', ' ', text)
+    # Trim leading/trailing spaces
+    text = text.strip()
+
+    # Specific replacements for known complex headers to simpler English forms for snake_case.
+    # These replacements are applied before general snake_case conversion to ensure meaningful keys.
+    replacements = {
+        "Product & Service ผลิตภัณฑ์และบริการ": "product_and_service",
+        "Impact Category ประเภทของผลกระทบที่เกิดขึ้น": "impact_category",
+        "Severity of Impact Over Time ระดับผลกระทบที่เพิ่มขึ้นในแต่ละวัน": "severity_of_impact_over_time",
+        "Maximum Tolerable Period of Disruption (MTPD)": "maximum_tolerable_period_of_disruption_mtpd",
+        "Recovery Time Objective (RTO)": "recovery_time_objective_rto",
+        "Minimum Business Continuity Objective (MBCO)": "minimum_business_continuity_objective_mbco",
+        "Crisis ภัยคุกคาม": "crisis_threat",
+        "Resource ทรัพยากร": "resource",
+        "รวมคะแนน": "total_score",
+        "การจัดลำดับ": "ranking",
+        # Resource sub-categories - prioritize English and add context
+        "People บุคลากร": "people",
+        "Information สารสนเทศและข้อมูล": "information_data",
+        "Building โครงสร้างพื้นฐานทางกายภาพ เช่นอาคาร": "building_physical_infrastructure",
+        "Equipment อุปกรณ์และโภคภัณฑ์": "equipment_consumables",
+        "ICT ระบบเทคโนโลยีสารสนเทศและการสื่อสาร": "ict_system",
+        "Logistics การขนส่งและโลจิสติกส์": "logistics_transportation",
+        "Finance การเงิน": "finance",
+        "Supplier หุ้นส่วนและผู้ส่งมอบ": "supplier_and_partners",
+        "(ปกติ)": "normal",
+        "(ฉุกเฉิน)": "emergency",
+    }
+
+    # Apply specific replacements first. Iterate through sorted keys to ensure longer matches are tried first.
+    # This helps with cases like "People บุคลากร (ปกติ)" where "People บุคลากร" is a sub-string.
+    sorted_replacements = sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True)
+    for key, value in sorted_replacements:
+        if key in text:
+            text = text.replace(key, value)
+
+    # General snake_case conversion:
+    # Convert to lowercase
+    text = text.lower()
+    # Replace non-alphanumeric characters (except spaces and underscores) with nothing
+    text = re.sub(r'[^a-z0-9\s_]+', '', text)
+    # Replace spaces with underscores
+    text = re.sub(r'\s+', '_', text)
+    # Remove multiple underscores
+    text = re.sub(r'_+', '_', text)
+    # Remove leading/trailing underscores
+    text = text.strip('_')
+
+    return text
+
+def convert_tsv_to_json_lines(tsv_string, sheet_name):
+    """
+    Converts a TSV string to JSON Lines based on specific header rules.
+
+    Args:
+        tsv_string (str): The input TSV data as a string.
+        sheet_name (str): The name of the sheet to include in the JSON output.
+
+    Returns:
+        list: A list of JSON strings, where each string is a JSON object.
+    """
+    lines = tsv_string.strip().split('\n')
+    rows = [line.split('\t') for line in lines]
+
+    # Based on the provided TSV structure, header rows are 6 (index 5) and 7 (index 6).
+    header_row1 = rows[5]
+    header_row2 = rows[6]
+    data_start_row_index = 7
+
+    final_headers_snake_case = []
+
+    # Column 0: "Product & Service" (from header_row1)
+    final_headers_snake_case.append(clean_and_snake_case(header_row1[0]))
+    # Column 1: "Impact Category" (from header_row1)
+    final_headers_snake_case.append(clean_and_snake_case(header_row1[1]))
+
+    # Columns 2-11: "Severity of Impact Over Time" (parent from header_row1) + sub-headers (from header_row2)
+    parent_severity = clean_and_snake_case(header_row1[2])
+    for i in range(2, 12): # Cells from index 2 to 11 in header_row2
+        final_headers_snake_case.append(clean_and_snake_case(f"{parent_severity}_{header_row2[i]}"))
+
+    # Columns 12-15: Single headers directly from header_row1
+    final_headers_snake_case.append(clean_and_snake_case(header_row1[12])) # MTPD
+    final_headers_snake_case.append(clean_and_snake_case(header_row1[13])) # RTO
+    final_headers_snake_case.append(clean_and_snake_case(header_row1[14])) # MBCO
+    final_headers_snake_case.append(clean_and_snake_case(header_row1[15])) # Crisis
+
+    # Columns 16-31: "Resource" (parent from header_row1) + sub-headers (from header_row2)
+    parent_resource = clean_and_snake_case(header_row1[16])
+    for i in range(16, 32): # Cells from index 16 to 31 in header_row2
+        # Ensure header_row2 has the column, otherwise treat as empty
+        h2_cell_val = header_row2[i] if i < len(header_row2) else ""
+        final_headers_snake_case.append(clean_and_snake_case(f"{parent_resource}_{h2_cell_val}"))
+
+    json_lines_output = []
+    row_index_counter = 0
+
+    # Process data rows
+    for r_idx in range(data_start_row_index, len(rows)):
+        current_row_data = rows[r_idx]
+        
+        processed_row_values = []
+        all_cells_empty = True
+
+        for cell_idx, cell_value in enumerate(current_row_data):
+            # Trim leading/trailing spaces and collapse internal newlines to a single space
+            cleaned_value = re.sub(r'\s*\n\s*', ' ', cell_value).strip()
+            processed_row_values.append(cleaned_value)
+            if cleaned_value:
+                all_cells_empty = False
+        
+        # Drop rows with all-empty columns (after cleaning)
+        if all_cells_empty:
+            continue
+
+        row_index_counter += 1
+        data_object = {}
+        for h_idx, header_key in enumerate(final_headers_snake_case):
+            # Ensure we don't go out of bounds for data cells, fill with empty string if data is shorter than headers
+            value = processed_row_values[h_idx] if h_idx < len(processed_row_values) else ""
+            data_object[header_key] = value # Preserve dates as-is (as strings)
+
+        json_line = {
+            "sheet": sheet_name,
+            "row_index": row_index_counter,
+            "data": data_object
+        }
+        json_lines_output.append(json.dumps(json_line, ensure_ascii=False))
+
+    return json_lines_output
+
+# Input TSV data provided in the problem description
+tsv_data = """
+แบบวิเคราะห์ผลกระทบทางธุรกิจ Business Impact Analysis Form	Unnamed: 1	Unnamed: 2	Unnamed: 3	Unnamed: 4	Unnamed: 5	Unnamed: 6	Unnamed: 7	Unnamed: 8	Unnamed: 9	Unnamed: 10	Unnamed: 11	Unnamed: 12	Unnamed: 13	Unnamed: 14	Unnamed: 15	Unnamed: 16	Unnamed: 17	Unnamed: 18	Unnamed: 19	Unnamed: 20	Unnamed: 21	Unnamed: 22	Unnamed: 23	Unnamed: 24	Unnamed: 25	Unnamed: 26	Unnamed: 27	Unnamed: 28	Unnamed: 29	Unnamed: 30	Unnamed: 31
+																															
+ผู้ประเมิน			ชื่อหน่วยงาน									วันที่ประเมิน																		"ปตท.
+WHA
+PEA
+EGAT"	
+วิธีการประเมิน			ชื่อพื้นที่ประเมิน									ทบทวนครั้งที่																		ปตท.WHAPEAEGAT	
+																															
+" Product & Service
+ผลิตภัณฑ์และบริการ"	"Impact Category
+ประเภทของผลกระทบที่เกิดขึ้น"	Severity of Impact Over Time  ระดับผลกระทบที่เพิ่มขึ้นในแต่ละวัน 										Maximum Tolerable Period of Disruption (MTPD)	"Recovery Time Objective
+(RTO)"	Minimum Business Continuity Objective (MBCO)	"Crisis
+ภัยคุกคาม
+"	Resource ทรัพยากร															
+		1 Hour	4 Hour	8 Hour	12 Hour	24 Hour	3 Days	14 Days	30 Days	รวมคะแนน	การจัดลำดับ					"People
+บุคลากร
+(ปกติ)"	"People
+บุคลากร
+(ฉุกเฉิน)"	"Information
+สารสนเทศและข้อมูล
+(ปกติ)"	"Information
+สารสนเทศและข้อมูล
+(ฉุกเฉิน)"	"Building
+โครงสร้างพื้นฐานทางกายภาพ เช่นอาคาร 
+(ปกติ)"	"Building
+โครงสร้างพื้นฐานทางกายภาพ เช่นอาคาร 
+(ฉุกเฉิน)"	"Equipment
+อุปกรณ์และโภคภัณฑ์
+(ปกติ)
+"	"Equipment
+อุปกรณ์และโภคภัณฑ์
+(ฉุกเฉิน)
+"	"ICT
+ระบบเทคโนโลยีสารสนเทศและการสื่อสาร 
+(ปกติ)"	"ICT
+ระบบเทคโนโลยีสารสนเทศและการสื่อสาร 
+(ฉุกเฉิน)"	"Logistics
+การขนส่งและโลจิสติกส์
+(ปกติ)"	"Logistics
+การขนส่งและโลจิสติกส์
+(ฉุกเฉิน)"	"Finance
+การเงิน
+(ปกติ)"	"Finance
+การเงิน
+(ฉุกเฉิน)"	"Supplier
+หุ้นส่วนและผู้ส่งมอบ
+(ปกติ)"	"Supplier
+หุ้นส่วนและผู้ส่งมอบ
+(ฉุกเฉิน)"
+ควบคุมการผลิตไฟฟ้าและดูแลการปฏิบัติการผลิตให้กับลูกค้า	1. การเงิน	2	2	2	3	4	4	4	4	97	Priority2	24 Hours	24 Hours	50% (80 MW)	"1.Water loss
+2.Steam loss
+3.Power loss
+4.NG loss
+5.ไฟใหม้
+6.Cyber attack
+7.โรคระบาด"	"Operation 9 คน
+Maintenance 4 คน
+Safety 1 คน"	"Operation 16 คน
+Maintenance 4 คน
+Safety 1 คน"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	Control Room	"1.Emergency Control Center (ECC)
+2.CCB"	"คอมพิวเตอร์ 8
+วิทยุสื่อสาร 13
+โทรศัพท์มือถือ 1
+โทรศัพท์ Plant 3
+Hot Line 3"	"วิทยุสื่อสาร 13
+คอมพิวเตอร์ 8
+โทรศัพท์ 4
+ทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด 24 ชม."	"ระบบ VPN
+Internet
+PI"	"ระบบ VPN
+Internet
+PI"	รถยนต์ 1 คัน	รถยนต์ 1 คัน	-	เงินสำรอง	"ปตท.
+WHA
+PEA
+EGAT"	"ปตท.
+WHA
+PEA
+EGAT"
+	2. กฏหมาย กฏระเบียบ ข้อบังคับ และสัญญา / ข้อตกลงระดับของการให้บริการ	2	3	3	3	4	4	4	4	110	Priority1																				
+	3. ความปลอดภัยอาชีวอนามัยของบุคลากร	1	1	1	1	1	1	1	1	36	Priority4																				
+	4. สิ่งแวดล้อม	2	2	2	2	2	2	2	2	72	Priority3																				
+	5. ลูกค้า คู่ค้า	2	3	3	3	4	4	4	4	110	Priority1																				
+	6. กระบวนการทางธุรกิจ และการปฏิบัติการ	2	2	2	2	4	4	4	4	92	Priority2																				
+	7. ชื่อเสียงภาพลักษณ์ต่อองค์กร	1	2	2	3	4	4	4	4	89	Priority2																				
+ควบคุมการผลิตไอน้ำและดูแลการปฏิบัติการผลิตให้กับลูกค้า	1. การเงิน	2	2	2	3	4	4	4	4	97	Priority2	24 Hours	24 Hours	68% (410 t/h)	"1.Water loss
+2.Steam loss
+3.Power loss
+4.NG loss
+5.ไฟใหม้
+6.Cyber attack
+7.โรคระบาด"	"Operation 9 คน
+Maintenance 4 คน
+Safety 1 คน"	"Operation 16 คน
+Maintenance 4 คน
+Safety 1 คน"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	Control Room	"1.Emergency Control Center (ECC)
+2.CCB"	"คอมพิวเตอร์ 8
+วิทยุสื่อสาร 13
+โทรศัพท์มือถือ 1
+โทรศัพท์ Plant 3
+Hot Line 3"	"วิทยุสื่อสาร 13
+คอมพิวเตอร์ 8
+โทรศัพท์ 4
+ทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด 24 ชม."	"ระบบ VPN
+Internet
+PI"	"ระบบ VPN
+Internet
+PI"	รถยนต์ 1 คัน	รถยนต์ 1 คัน	-	เงินสำรอง	"ปตท.
+WHA
+PEA
+EGAT"	"ปตท.
+WHA
+PEA
+EGAT"
+	2. กฏหมาย กฏระเบียบ ข้อบังคับ และสัญญา / ข้อตกลงระดับของการให้บริการ	2	3	3	3	4	4	4	4	110	Priority1																				
+	3. ความปลอดภัยอาชีวอนามัยของบุคลากร	1	1	1	1	1	1	1	1	36	Priority4																				
+	4. สิ่งแวดล้อม	2	2	2	2	2	2	2	2	72	Priority3																				
+	5. ลูกค้า คู่ค้า	2	3	3	3	4	4	4	4	110	Priority1																				
+	6. กระบวนการทางธุรกิจ และการปฏิบัติการ	2	2	2	2	4	4	4	4	92	Priority2																				
+	7. ชื่อเสียงภาพลักษณ์ต่อองค์กร	1	2	2	3	4	4	4	4	89	Priority2																				
+ควบคุมการผลิตน้ำและดูแลการปฏิบัติการผลิตให้กับลูกค้า	1. การเงิน	2	2	2	3	4	4	4	4	97	Priority2	24 Hours	24 Hours	100% (430 m3/h)	"1.Water loss
+2.Steam loss
+3.Power loss
+4.NG loss
+5.ไฟใหม้
+6.Cyber attack
+7.โรคระบาด"	"Operation 9 คน
+Maintenance 4 คน
+Safety 1 คน"	"Operation 16 คน
+Maintenance 4 คน
+Safety 1 คน"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	"Procedure / WI
+P&ID
+Production plan
+Single Line Diagram
+Contract Agreement"	Control Room	"1.Emergency Control Center (ECC)
+2.CCB"	"คอมพิวเตอร์ 8
+วิทยุสื่อสาร 13
+โทรศัพท์มือถือ 1
+โทรศัพท์ Plant 3
+Hot Line 3"	"วิทยุสื่อสาร 13
+คอมพิวเตอร์ 8
+โทรศัพท์ 4
+ทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด 24 ชม."	"ระบบ VPN
+Internet
+PI"	"ระบบ VPN
+Internet
+PI"	รถยนต์ 1 คัน	รถยนต์ 1 คัน	-	เงินสำรอง	"ปตท.
+WHA
+PEA
+EGAT"	"ปตท.
+WHA
+PEA
+EGAT"
+	2. กฏหมาย กฏระเบียบ ข้อบังคับ และสัญญา / ข้อตกลงระดับของการให้บริการ	2	3	3	3	4	4	4	4	110	Priority1																				
+	3. ความปลอดภัยอาชีวอนามัยของบุคลากร	1	1	1	1	1	1	1	1	36	Priority4																				
+	4. สิ่งแวดล้อม	2	2	2	2	2	2	2	2	72	Priority3																				
+	5. ลูกค้า คู่ค้า	2	3	3	3	4	4	4	4	110	Priority1																				
+	6. กระบวนการทางธุรกิจ และการปฏิบัติการ	2	2	2	2	4	4	4	4	92	Priority2																				
+	7. ชื่อเสียงภาพลักษณ์ต่อองค์กร	1	2	2	3	4	4	4	4	89	Priority2																				
+"""
+
+sheet_name = "2._BIA_Product"
+json_output = convert_tsv_to_json_lines(tsv_data, sheet_name)
+
+for line in json_output:
+    print(line)

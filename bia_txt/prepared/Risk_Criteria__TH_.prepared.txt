@@ -1,0 +1,176 @@
+python
+import json
+
+def to_snake_case(text):
+    """Converts a string to snake_case, handling special characters and collapsing newlines."""
+    if not text:
+        return ""
+    
+    # Replace special characters and spaces with underscores, and newlines with spaces then underscores
+    text = text.replace('(', '').replace(')', '').replace('/', '').replace('\\', '')
+    text = text.replace(' ', '_').replace('\n', '_').replace('-', '_')
+    
+    # Remove any multiple underscores and leading/trailing underscores
+    text = '_'.join(filter(None, text.split('_'))).lower()
+    return text
+
+def convert_tsv_to_json_lines(tsv_string, sheet_name):
+    json_lines_output = []
+    
+    # 1. Split TSV into lines and cells, clean each cell.
+    #    Trim leading/trailing spaces, collapse internal newlines to a single space.
+    raw_lines = tsv_string.strip().split('\n')
+    
+    cleaned_rows = []
+    for line in raw_lines:
+        cells = [cell.strip().replace('\n', ' ') for cell in line.split('\t')]
+        # Drop rows with all-empty columns (after cleaning)
+        if any(cells): 
+            cleaned_rows.append(cells)
+
+    current_main_category = None
+    json_line_counter = 0
+    
+    i = 0
+    while i < len(cleaned_rows):
+        row = cleaned_rows[i]
+        # Ensure row has at least 7 columns (0-6) by padding with empty strings to avoid index errors
+        padded_row = row + [''] * (7 - len(row))
+        col0, col1, col2, col3, col4, col5, col6 = padded_row[:7]
+        
+        # Determine if the row's 'data' columns (3-6) are all empty
+        is_data_cols_empty = not (col3 or col4 or col5 or col6)
+
+        # --- Explicitly skip known header/metadata rows that don't directly form data objects ---
+        # These are identified by specific content patterns.
+        if "Unnamed: 0" in col0 and "GPSC Risk Criteria" in col1: # Original TSV headers
+            i += 1
+            continue
+        if "(Version as of 7 Aug 2019)" in col6: # Metadata line
+            i += 1
+            continue
+        if "เกณฑ์การประเมินโอกาสเกิด (Likelihood)" in col1 and "ระดับ" in col3: # Likelihood section header
+            current_main_category = col1 # Set category context for subsequent likelihood data
+            i += 1
+            continue
+        if "ต่ำ 1" in col3 and "ปานกลาง 2" in col4: # Generic level sub-headers (appears twice)
+             i += 1
+             continue
+        if "เกณฑ์การประเมินผลกระทบ (Impact)" in col1 and "ระดับ" in col3: # Impact section header
+            current_main_category = col1 # Set category context for subsequent impact data
+            i += 1
+            continue
+
+        # --- Special handling for "โอกาสเกิด" (Likelihood) data block ---
+        # This block's data is spread across two consecutive rows, forming one JSON object.
+        if col1 == "โอกาสเกิด" and not is_data_cols_empty:
+            if i + 1 < len(cleaned_rows): # Check if the next row (for descriptions) exists
+                next_row = cleaned_rows[i+1]
+                padded_next_row = next_row + [''] * (7 - len(next_row))
+                
+                col3_next, col4_next, col5_next, col6_next = padded_next_row[3], padded_next_row[4], padded_next_row[5], padded_next_row[6]
+                
+                # Only process if the next row also contains data for the levels (descriptions)
+                if any([col3_next, col4_next, col5_next, col6_next]):
+                    json_line_counter += 1
+                    data_obj = {
+                        "category": to_snake_case(current_main_category) if current_main_category else "unknown_category",
+                        "sub_category_metric": to_snake_case(col1),
+                        "level_1": {"threshold": col3, "description": col3_next},
+                        "level_2": {"threshold": col4, "description": col4_next},
+                        "level_3": {"threshold": col5, "description": col5_next},
+                        "level_4": {"threshold": col6, "description": col6_next}
+                    }
+                    json_lines_output.append(json.dumps({
+                        "sheet": sheet_name,
+                        "row_index": json_line_counter,
+                        "data": data_obj
+                    }, ensure_ascii=False))
+                    i += 1 # Consume the next row (description row)
+            i += 1 # Consume the current row (threshold row)
+            continue # Skip to the next iteration of the while loop
+
+        # --- Update current_main_category for general data sections (Impact, Financial, etc.) ---
+        # If col0 has content, it acts as a main category header, which applies to this row
+        # and subsequent rows where col0 is empty, until a new col0 is encountered.
+        if col0:
+            current_main_category = col0
+
+        # --- General handling for data rows (typically for the Impact section metrics) ---
+        # A data row is identified if col1 has content (the metric/sub-category) AND
+        # there are values in data columns (3-6) AND it hasn't been handled by special logic.
+        if col1 and not is_data_cols_empty:
+            json_line_counter += 1
+            data_obj = {
+                "category": to_snake_case(current_main_category) if current_main_category else "unknown_category",
+                "sub_category_metric": to_snake_case(col1),
+                "level_1": col3,
+                "level_2": col4,
+                "level_3": col5,
+                "level_4": col6
+            }
+            json_lines_output.append(json.dumps({
+                "sheet": sheet_name,
+                "row_index": json_line_counter,
+                "data": data_obj
+            }, ensure_ascii=False))
+        
+        i += 1 # Move to the next row
+            
+    return "\n".join(json_lines_output)
+
+# Provided TSV content
+tsv_input = """Unnamed: 0	GPSC Risk Criteria	Unnamed: 2	Unnamed: 3	Unnamed: 4	Unnamed: 5	Unnamed: 6
+						(Version as of 7 Aug 2019)
+	เกณฑ์การประเมินโอกาสเกิด (Likelihood) 		ระดับ			
+			"ต่ำ
+1"	"ปานกลาง
+2"	"สูง
+3"	"รุนแรง
+4"
+						
+	โอกาสเกิด		< 10%	>10% ถึง < 20%	>20% ถึง < 50%	> 50%
+			ไม่เคย/เคยเกิดขึ้น 1 ครั้งใน 5 ปี	เคยเกิดขึ้น 1 ครั้ง ใน 3 ปี	เคยเกิดขึ้น 1 ครั้ง ใน 1 ปี	เคยเกิดขึ้น > 1 ครั้ง ใน 1 ปี
+						
+	" เกณฑ์การประเมินผลกระทบ 
+(Impact)"		ระดับ			
+			"ต่ำ
+1"	"ปานกลาง
+2"	"สูง
+3"	"รุนแรง
+4"
+	"ด้านการเงิน 
+(Financial)"	กำไรสุทธิต่ำกว่าเป้าหมาย (Net Profit)	< 1.25%	> 1.25% ถึง < 2.5%	> 2.5% ถึง < 5%	> 5% 
+		กำไรขั้นต้นต่ำกว่าเป้าหมาย (EBITDA)	< 1.25%	> 1.25% ถึง < 2.5%	> 2.5% ถึง < 5%	> 5% 
+		รายได้ต่ำกว่าเป้าหมาย (Revenue)	< 1.25%	> 1.25% ถึง < 2.5%	> 2.5% ถึง < 5%	> 5%
+		ค่าใช้จ่ายสูงกว่าเป้าหมาย (Expense)	< 1.25%	> 1.25% ถึง < 2.5%	> 2.5% ถึง < 5%	> 5%
+		ผลตอบแทนการลงทุนต่ำกว่าเป้าหมาย (Project Return: Equity IRR)	 < 5 % จาก base case	 > 5 % ถึง < 10 % จาก base case	> 10% ถึง < 15% จาก base case	 >15 % จาก base case
+		"งบประมาณลงทุนสูงกว่าที่ได้รับอนุมัติ
+(Project Cost Overrun)"	< 1.25%จาก base case	> 1.25% ถึง < 2.5% จาก base case	> 2.5% ถึง < 5% จาก base case	> 5% จาก base case
+	"ด้านกระบวนการธุรกิจ
+และการปฏิบัติการ 
+(Business Process and Operation )"	ประสิทธิผลของกระบวนการ	มีผลกระทบต่อกระบวนการผลิต/กระบวนการดำเนินงานเล็กน้อยโดยอยู่ในระดับที่สามารถควบคุมและแก้ไขได้ด้วยตนเอง	"มีผลกระทบต่อกระบวนการผลิต/กระบวนการดำเนินงาน โดยอยู่ในระดับที่สามารถควบคุมและแก้ไขได้โดยหน่วยงานที่เกี่ยวข้อง
+"	มีผลกระทบต่อกระบวนการผลิต/กระบวนการดำเนินงาน โดยจำเป็นต้องหยุด/ชะลอการดำเนินงานหลักบางส่วนลง	มีผลกระทบต่อกระบวนการผลิต/กระบวนการดำเนินงานอย่างรุนแรง  โดยส่งผลกระทบต่อการส่งมอบผลิตภัณฑ์แก่ลูกค้า/การดำเนินงานและเป้าหมายตามแผนงาน
+		ผลิตภัณฑ์หรือบริการ	เกิดความล่าช้าในการส่งมอบผลิตภัณฑ์/บริการ	เกิดความล่าช้าในการส่งมอบผลิตภัณฑ์/บริการ และไม่ได้คุณภาพตรงตามข้อกำหนด	ไม่สามารถผลิต/ส่งมอบผลิตภัณฑ์หรือบริการได้	ไม่สามารถผลิต/ส่งมอบผลิตภัณฑ์หรือบริการและบริษัทมีค่าใช้จ่ายส่วนเพิ่มหรือถูกเรียกร้องค่าเสียหาย
+		การปฏิบัติตามกฎหมาย / กฎระเบียบ / ข้อบังคับ	ขัดต่อกฎระเบียบ/ข้อบังคับ/ข้อกำหนดตามมาตรฐานต่างๆ ของบริษัท	ขัดต่อกฎหมาย กฏระเบียบของหน่วยงานภายนอกที่กำกับดูแล ซึ่งกระทบต่อการดำเนินงานของบริษัท แต่สามารถดำเนินการแก้ไขได้ในทันที	ขัดต่อกฎหมาย/ข้อบังคับ กฏระเบียบของหน่วยงานภายนอกที่กำกับดูแล โดยได้รับบทลงโทษตามกฎหมาย หรือต้องแก้ไขตามคำสั่งของหน่วยงานภายนอกที่กำกับดูแล	ขัดต่อกฎหมาย กฏระเบียบของหน่วยงานภายนอกที่กำกับดูแล โดยถูกเพิกถอนใบอนุญาต หรือถูกปิดกิจการ
+		ระยะเวลาการดำเนินโครงการล่าช้า (ตั้งแต่ BOD Approval ถึง COD)	" < 3% จากแผนงาน 
+หรือ < 1 เดือน"	" 3% < X < 5% จากแผนงาน 
+หรือ < 2 เดือน"	"5% < X < 10% จากแผนงาน 
+หรือ < 3 เดือน"	ล่าช้าจากแผนงาน > 10% หรือ > 3 เดือน
+		การกำกับดูแลบริษัทในเครือ 	การดำเนินงานเป็นไปตามนโยบาย/แนวทางของ GPSC และสามารถควบคุมได้	การดำเนินงานเป็นไปตามนโยบาย/แนวทางของ GPSC โดยไม่สามารถควบคุมได้	ไม่ดำเนินงานตามนโยบาย/แนวทางของ GPSC 	ไม่ดำเนินงานตามนโยบาย/แนวทางของ GPSC และส่งผลเสียหายต่อ GPSC
+	"ชื่อเสียงองค์กร 
+(Image and Reputation)  "	ภาพลักษณ์ GPSC ต่อสาธารณะ/สื่อ	-	ทำให้เกิดความไม่พอใจจากสาธารณะ เช่น การเขียนบทความวิจารณ์	ทำให้เกิดความไม่พอใจอย่างมากจากสาธารณะ เช่น การแสดงความเห็นคัดค้านผ่านสื่อต่างๆ	ทำให้เกิดการต่อต้านอย่างรุนแรงจากสาธารณะ เช่น การประท้วงจากชุมชน
+		ภาพลักษณ์ GPSC ต่อชุมชน	มีผลกระทบต่อชุมชนรอบสถานประกอบการ/โรงงานเล็กน้อย โดยได้รับคำติเตียนข้อครหาอย่างไม่เป็นทางการผ่านช่องทางต่างๆ ของบริษัท	มีผลกระทบต่อชุมชนรอบสถานประกอบการ/โรงงาน โดยได้รับข้อร้องเรียนอย่างเป็นลายลักษณ์อักษร และดำเนินแก้ไขได้ภายใน 1 สัปดาห์	มีผลกระทบต่อชุมชนรอบสถานประกอบการ/โรงงานโดย ได้รับข้อร้องเรียนอย่างเป็นลายลักษณ์อักษร  และถูกดำเนินการตรวจสอบจากหน่วยงานกำกับดูแลจากภายนอก	มีผลกระทบรุนแรงต่อชุมชนเป็นบริเวณกว้าง  โดยได้รับคำสั่งหยุดการดำเนินการ หรือถูกประท้วงจากมวลชนจนไม่สามารถดำเนินธุรกิจได้
+		"สิ่งแวดล้อม
+
+"	เกิดผลกระทบต่อสิ่งแวดล้อมในบริเวณข้างเคียงเล็กน้อย โดยไม่ต้องมีมาตรการดำเนินการแก้ไข	เกิดผลกระทบต่อสิ่งแวดล้อมโดยสามารถดำเนินการแก้ไขได้ภายใน 1 วัน หรือใช้ระยะเวลาในการบรรเทา/ฟื้นฟูให้กลับคืนสภาพได้ภายในระยะเวลา < 1 ปี	เกิดผลกระทบต่อสิ่งแวดล้อมระดับรุนแรงโดยสามารถดำเนินการแก้ไขได้ในระยะเวลามากกว่า 1 วัน แต่ไม่เกิน 1  เดือน หรือสามารถใช้ระยะเวลาในการบรรเทา/ฟื้นฟูให้กลับคืนสภาพได้ภายในระยะเวลาตั้งแต่ 1-5 ปี	เกิดผลกระทบต่อสิ่งแวดล้อมระดับรุนแรงมาก โดยสามารถดำเนินการแก้ไขได้ในระยะเวลามากกว่า 1  เดือน หรือต้องอาศัยระยะเวลามากกว่า 5 ปีขึ้นไปในการบรรเทา/ฟื้นฟู หรือเสียหายจนยากต่อการฟื้นฟู
+	"ด้านลูกค้า 
+(Customers)"	ปริมาณขายผลิตภัณฑ์/บริการของ GPSC	ลูกค้าที่ไม่ใช่ลูกค้าหลักลดการซื้อผลิตภัณฑ์/บริการ	ลูกค้าที่ไม่ใช่ลูกค้าหลักเลิกซื้อผลิตภัณฑ์/บริการ	ลูกค้าหลักลดการซื้อผลิตภัณฑ์/บริการ	ลูกค้าหลักเลิกซื้อผลิตภัณฑ์/บริการ
+		ความพึงพอใจของลูกค้า/คู่ค้า	-	ลูกค้า/คู่ค้าแสดงความไม่พอใจร้องเรียนกลับมาที่บริษัท	ลูกค้า/คู่ค้าแสดงความไม่พอใจผ่านสื่อต่างๆ	ลูกค้า/คู่ค้าฟ้องร้องบริษัท
+	"ด้านบุคคล
+(People)"	ความปลอดภัยและสุขภาพ	พนักงาน ลูกค้า คู่ค้า หรือผู้มีส่วนได้ส่วนเสียได้รับบาดเจ็บจนต้องได้รับการปฐมพยาบาลทางการแพทย์	พนักงาน ลูกค้า คู่ค้า หรือผู้มีส่วนได้ส่วนเสีย ได้รับบาดเจ็บหรือเจ็บป่วยจนต้องได้รับการรักษาจากแพทย์ (OPD) แต่ไม่ต้องเข้าพักรักษาในโรงพยาบาล	พนักงาน ลูกค้า คู่ค้า หรือผู้มีส่วนได้ส่วนเสีย ได้รับบาดเจ็บหนักหรือเจ็บป่วยจนต้องเข้าพักรักษาในโรงพยาบาล (IPD)	พนักงาน ลูกค้า คู่ค้า หรือผู้มีส่วนได้ส่วนเสีย ทุพพลภาพ/เสียชีวิต
+		ความพึงพอใจของพนักงาน	พนักงานเกิดความไม่พอใจ และสามารถบริหารจัดการแก้ไขได้ภายในหน่วยงาน	พนักงานเกิดความไม่พึงพอใจ และมีความจำเป็นต้องอาศัยหน่วยงานกลาง (HR) ในการดำเนินการแก้ไข	พนักงานเกิดความไม่พึงพอใจสูง และมีการร้องเรียนผ่านช่องทางภายในบริษัท	พนักงานเกิดความไม่พึงพอใจรุนแรง เช่น นัดหยุดงานหรือลาออก และส่งผลให้การดำเนินธุรกิจหยุดชะงัก หรือเกิดข้อพิพาทที่ต้องเข้าสู่กระบวนการทางกฎหมาย"""
+
+sheet_name = "Risk_Criteria__TH_"
+json_output = convert_tsv_to_json_lines(tsv_input, sheet_name)
+print(json_output)

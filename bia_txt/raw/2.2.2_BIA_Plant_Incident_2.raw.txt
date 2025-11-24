@@ -1,0 +1,17 @@
+แบบวิเคราะห์ผลกระทบทางธุรกิจ Business Impact Analysis Form	Unnamed: 1	Unnamed: 2	Unnamed: 3	Unnamed: 4	Unnamed: 5	Unnamed: 6	Unnamed: 7	Unnamed: 8	Unnamed: 9	Unnamed: 10	Unnamed: 11	Unnamed: 12	Unnamed: 13	Unnamed: 14	Unnamed: 15
+															
+ผู้ประเมิน	OCOT/OC1M		ชื่อหน่วยงาน		ส่วนปฏิบัติการผลิต  CUP1								วันที่ประเมิน	28/09/2565	
+วิธีการประเมิน	ประเมินแบบพื้นที่		ชื่อพื้นที่ประเมิน		GPSC RYG : CUP-1								ทบทวนครั้งที่	4	
+															
+Plant incident	"Impact Category
+ประเภทของผลกระทบที่เกิดขึ้น"	Severity of Impact Over Time  ระดับผลกระทบที่เพิ่มขึ้นในแต่ละวัน 											Maximum Tolerable Period of Disruption (MTPD)	"Recovery Time Objective
+(RTO)"	Minimum Business Continuity Objective (MBCO)
+		1 Hour	4 Hour	8 Hour	12 Hour	24 Hour	3 Days	5 Days	7 Days	14 Days	21 Days	30 Days			
+ABCT breaker 5YB-01 trip by relay 87L operate 	B.ผลกระทบต่อลูกค้า 	3	3	3	3	4	4	4	4	4	4	4	24 ชม	1 ชม	1
+Plant islanding due to ban chang substation switching line to bay spare (inter trip not support this function)	A. สูญเสียรายได้โดยตรง 	2	2	3	3	4	4	4	4	4	4	4	24 ชม	1 ชม	1
+GTG-11 trip by 1391VA979HH and PEA 1YB-01 OPEN plant Islanding by relay 21/21N Zone1	A. สูญเสียรายได้โดยตรง 	2	2	3	3	4	4	4	4	4	4	4	24 ชม	1 ชม	1
+GTG-14 was tripped by Load GEAR#1&2 AXIS VIBRAT.high	A. สูญเสียรายได้โดยตรง 	2	2	3	3	4	4	4	4	4	4	4	24 ชม	12 ชม	1
+"GTG-11 was tripped by alarm ""TAHH 534-541 Brg.Metal Temp high trip"""	A. สูญเสียรายได้โดยตรง 	2	2	3	3	4	4	4	4	4	4	4	24 ชม	12 ชม	1
+"GTG11 was tripped by ""Generator Vibration high trip"""	A. สูญเสียรายได้โดยตรง 	2	2	3	3	4	4	4	4	4	4	4	24 ชม	12 ชม	1
+Close 52Aux (GTG-12) 87T operate 52L1 Open,52G Open and GTG-12 trip	A. สูญเสียรายได้โดยตรง 	2	2	3	3	4	4	4	4	4	4	4	24 ชม	12 ชม	1
+Aux Boiler trip by burner inlet fuel gas pressure low low	D.การหยุดชะงักของการปฏิบัติงาน/หน้าที่และงานประจำวัน	2	2	2	2	4	4	4	4	4	4	4	24 ชม	12 ชม	1

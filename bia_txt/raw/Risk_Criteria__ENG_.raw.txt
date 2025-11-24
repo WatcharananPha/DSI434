@@ -1,0 +1,53 @@
+Unnamed: 0	GPSC Risk Criteria	Unnamed: 2	Unnamed: 3	Unnamed: 4	Unnamed: 5	Unnamed: 6
+						(Version as of 7 Aug 2019)
+	Likelihood		Level			
+			"Low
+1"	"Medium
+2"	"High
+3"	"Extreme
+4"
+						
+	Likelihood		< 10%	>10% to < 20%	>20% to < 50%	> 50%
+			"Never or occure 1 time 
+in 5 years"	Occure 1 time in 3 years	Occure 1 time in a year	"Occure more than 1 time 
+in a year"
+						
+	Impact		Level			
+			"Low
+1"	"Medium
+2"	"High
+3"	"Extreme
+4"
+						
+	Financial	Net Profit: Lower than Target	< 1.25%	> 1.25% to < 2.5%	> 2.5% to < 5%	> 5% 
+		EBITDA: Lower than Target	< 1.25%	> 1.25% to < 2.5%	> 2.5% to < 5%	> 5% 
+		Revenue: Lower than Target	< 1.25%	> 1.25% to < 2.5%	> 2.5% to < 5%	> 5%
+		Expense: Higher than Target	< 1.25%	> 1.25% to < 2.5%	> 2.5% to < 5%	> 5%
+		"Project Return: Equity IRR  
+Lower than Target"	 < 5 % from base case	 > 5 % to < 10 % from base case	> 10% to < 15% from base case	 >15 % to base case
+		Project Cost Overrun	< 1.25% from base case	"> 1.25% to < 2.5% 
+from base case"	> 2.5% to < 5% from base case	> 5% from base case
+	Business Process and Operation	Process Effectiveness	Slight/Minor impact on operating/core process, and can be controlled and recovered by owner	Moderate impact on operating/core process, and need support from related party to control and recover	High impact on operating/core process, and need to stop/slow down some part of the core process	Extreme impact on operating/core process, and also affect to customers' product or business target
+		Product/Service	Delay in delivery of the product/service  	Delay in delivery and unable to meet quality standard of the product/service  	Delivery of the product/service cannot be done 	Delivery of the product/service cannot be done, and company is charged with additional costs or damage claim
+		Regulatory Compliance	Not comply with the regulations, policies, procedures and standards of the company	Not comply with the laws and regulations from external regulator, but can be resolved immediately	Not comply with the laws and regulations from external regulator, and be punished according to law or required to remedy according to external regulator's order	Not comply with the laws and regulations from external regulator, and cause revokation of license or dissolution
+		Project Delay (from BOD Approval Plan)	" < 3% from plan 
+or < 1 month"	" 3% < X < 5% from plan 
+or < 2 months"	"5% < X < 10% from plan
+or < 3 months"	"Delay from plan > 10% 
+or > 3 months"
+		Subsidiary Management	Managing subsidiary aligns with GPSC's policy or GPSC way of conduct, and can be controlled 	Managing subsidiary aligns with GPSC's policy or GPSC way of conduct, and cannot be controlled 	Managing subsidiary does not align with GPSC's policy or GPSC way of conduct	Managing subsidiary does not align with GPSC's policy or GPSC way of conduct, and caues impact to GPSC business 
+	"
+Image and Reputation"	GPSC Image to Public/Media	-	Moderate adveres impact from the public i.e. negative criticism in publication 	High adveres impact from the public i.e. negative feedback in media coverage	Extreme adveres impact from the public i.e. local community protest
+		GPSC Image to Community	Minor impact on local community with informal feedback from various internal company channels	Impact on local community with formal letter, but can be recovered within 1 week	Impact on local community with formal letter, and be investigated from external regulator	Extreme impact on community in wide area, and be ordered to stop operation or unable to operate due to the protest
+		"Environment
+
+"	Minor impact on the environment in surrounding areas without required additional action	Impact on the environment which can be resolved within 1 day or need less than 1 week for restoration/rehabilitation	High impact on the environment which can be resolved withinh 1 month or need 1-5 years for restoration/rehabilitation	Extreme impact on the environment which can be resolved more than 1 month or need more than 5 years for restoration/rehabilitation
+	Customers	Volume of Product/Service	"General customer reduces purchasing of products/services.
+"	"General customer stops purchasing of products/services.
+"	"Main customer reduces purchasing of products/services.
+"	"Main customer stops purchasing of products/services.
+"
+		Customer/Partner Satisfaction	-	Complaint of dissatisfacton from customer/partner is reported to the company	Dissatisfaction from customer/partner is published in  media channels	Customer/partner sues the company
+	"
+People"	Health and Safety	Employee, customer, partner, or stakeholder is injured and required medical first aid	Employee, customer, partner, or stakeholder is injured and required medical treatment (OPD)	Employee, customer, partner, or stakeholder is severely injured and required hospitalization (IPD).	Employee, customer, partner, or stakeholder is permanent incapacity/dealth
+		Employee Engagement	Employees are dissatisfied, and the issues can be managed within the department	Employees are dissatisfied, and need HR department to resolve the issues	Employees are severely dissatisfied, and complaints are addressed through company channels	Employees are extremely dissatisfied and expressed by resigning or protesting, which result in business interruption or legal dispute

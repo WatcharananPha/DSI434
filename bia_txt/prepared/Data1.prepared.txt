@@ -1,0 +1,87 @@
+json
+{"sheet": "Data1", "row_index": 1, "data": {"unnamed_0": "พื้นที่", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 2, "data": {"unnamed_0": "GPSC BKK : EnCo B - 5th floor", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 3, "data": {"unnamed_0": "GPSC BKK : EnCo B - 18th floor", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 4, "data": {"unnamed_0": "GPSC BKK : Empire Tower", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 5, "data": {"unnamed_0": "GPSC CBI : GIPP", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 6, "data": {"unnamed_0": "GPSC CBI : IPP1", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 7, "data": {"unnamed_0": "GPSC RYG : Central Warehouse", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 8, "data": {"unnamed_0": "GPSC RYG : CUP-1", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 9, "data": {"unnamed_0": "GPSC RYG : CUP-2", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 10, "data": {"unnamed_0": "GPSC RYG : CUP-3", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 11, "data": {"unnamed_0": "GPSC RYG : CUP-4", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 12, "data": {"unnamed_0": "GPSC RYG : Energy Storage Factory", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 13, "data": {"unnamed_0": "GPSC RYG : GHECO-One", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 14, "data": {"unnamed_0": "GPSC RYG : Glow energy", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 15, "data": {"unnamed_0": "GPSC RYG : RDF", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 16, "data": {"unnamed_0": "GPSC RYG : SPP11", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 17, "data": {"unnamed_0": "GPSC RYG : SPP2/3", "unnamed_1": "", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 18, "data": {"unnamed_0": "BFS", "unnamed_1": "โครงการแฟลซ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 19, "data": {"unnamed_0": "ESS", "unnamed_1": "ฝ่ายกลยุทธ์ซ่อมบำรุงโรงไฟฟ้า", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 20, "data": {"unnamed_0": "SCS", "unnamed_1": "ฝ่ายกลยุทธ์องค์กรและบริหารความเสี่ยง", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 21, "data": {"unnamed_0": "FFS", "unnamed_1": "ฝ่ายการเงินองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 22, "data": {"unnamed_0": "CGS", "unnamed_1": "ฝ่ายการพาณิชย์ กลุ่มลูกค้า GPSCและบริหารสัญญา", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 23, "data": {"unnamed_0": "HES", "unnamed_1": "ฝ่ายความมั่นคงปลอดภัย อาชีวอนามัและสิ่งแวดล้อม", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 24, "data": {"unnamed_0": "PSS", "unnamed_1": "ฝ่ายจัดซื้อ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 25, "data": {"unnamed_0": "EMS", "unnamed_1": "ฝ่ายซ่อมบำรุงโรงไฟฟ้า", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 26, "data": {"unnamed_0": "IAS", "unnamed_1": "ฝ่ายตรวจสอบภายในองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 27, "data": {"unnamed_0": "BNS", "unnamed_1": "ฝ่ายนวัฒกรรมและเทคโนโลยีพลังงาน", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 28, "data": {"unnamed_0": "STS", "unnamed_1": "ฝ่ายบริหารการเปลี่ยนแปลงและความยั่งยืนองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 29, "data": {"unnamed_0": "JCS", "unnamed_1": "ฝ่ายบริหารโครงการก่อสร้าง", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 30, "data": {"unnamed_0": "FTS", "unnamed_1": "ฝ่ายบริหารเงินทุนและการเงินองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 31, "data": {"unnamed_0": "AFS", "unnamed_1": "ฝ่ายบริหารทรัพยากรอาคาร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 32, "data": {"unnamed_0": "SIS", "unnamed_1": "ฝ่ายบริหารบริษัทในเครือและโครงการลงทุน", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 33, "data": {"unnamed_0": "RES", "unnamed_1": "ฝ่ายบริหารศักยภาพองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 34, "data": {"unnamed_0": "FAS", "unnamed_1": "ฝ่ายบัญชีและภาษีองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 35, "data": {"unnamed_0": "EZS", "unnamed_1": "ฝ่ายประสิทธิภาพโรงงานและการผลิต", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 36, "data": {"unnamed_0": "BOS", "unnamed_1": "ฝ่ายพัฒนาธุรกิจพื้นที่อื่นและพัฒนาโครงการลงทุน", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 37, "data": {"unnamed_0": "VRS", "unnamed_1": "ฝ่ายรัฐกิจสัมพันธ์และกิจการสาธารณะ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 38, "data": {"unnamed_0": "GNS", "unnamed_1": "ฝ่ายเลขานุการบริษัทและกำกับกิจการองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 39, "data": {"unnamed_0": "BTS", "unnamed_1": "ฝ่ายวิเคราะห์โครงการลงทุน", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 40, "data": {"unnamed_0": "NGS", "unnamed_1": "ฝ่ายวิศวกรรมและวิเคราะห์โครงการ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 41, "data": {"unnamed_0": "FSS", "unnamed_1": "ฝ่ายศูนย์บริการด้านการเงินและบัญชีองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 42, "data": {"unnamed_0": "HHPC", "unnamed_1": "โรงไฟฟ้าห้วยเฮาะ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 43, "data": {"unnamed_0": "OC1M", "unnamed_1": "ส่วนปฏิบัติการผลิต CUP1", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 44, "data": {"unnamed_0": "OC2M", "unnamed_1": "ส่วนปฏิบัติการผลิต CUP2", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 45, "data": {"unnamed_0": "OC3M", "unnamed_1": "ส่วนปฏิบัติการผลิต CUP3", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 46, "data": {"unnamed_0": "OC4M", "unnamed_1": "ส่วนปฏิบัติการผลิต CUP4", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 47, "data": {"unnamed_0": "OPM", "unnamed_1": "ส่วนปฏิบัติการผลิต SPP11", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 48, "data": {"unnamed_0": "OIM", "unnamed_1": "ส่วนปฏิบัติการผลิต GIPP", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 49, "data": {"unnamed_0": "OSM", "unnamed_1": "ส่วนปฏิบัติการผลิต SRC", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 50, "data": {"unnamed_0": "OGM", "unnamed_1": "ส่วนโรงไฟฟ้า GHECO-One", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 51, "data": {"unnamed_0": "OPPM", "unnamed_1": "ส่วนโรงไฟฟ้า Phase 2 Cogen", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 52, "data": {"unnamed_0": "ORM", "unnamed_1": "ส่วนโรงไฟฟ้าขยะ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 53, "data": {"unnamed_0": "CPM", "unnamed_1": "ส่วนวางแผนการพาณิชย์", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 54, "data": {"unnamed_0": "LGS", "unnamed_1": "สำนักกฎหมายองค์กร", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 55, "data": {"unnamed_0": "CMV", "unnamed_1": "หน่วยการพาณิชย์ กลุ่มลูกค้าอุตสาหกรรม Glow", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 56, "data": {"unnamed_0": "ERV", "unnamed_1": "หน่วยซ่อมบำรุงงโรงไฟฟ้าพื้นที่ระยอง", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 57, "data": {"unnamed_0": "STV", "unnamed_1": "หน่วยเทคโนโลยีสารสนเทศ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 58, "data": {"unnamed_0": "BIV", "unnamed_1": "หน่วยพัฒนาธุรกิจต่างประเทศ", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 59, "data": {"unnamed_0": "ORV", "unnamed_1": "หน่วยโรงไฟฟ้า Phase 3 Gas/ Coal", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 60, "data": {"unnamed_0": "CRV", "unnamed_1": "หน่วยลูกค้าสัมพันธ์ Glow", "unnamed_2": "", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 61, "data": {"unnamed_0": "", "unnamed_1": "1", "unnamed_2": "Financial", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 62, "data": {"unnamed_0": "", "unnamed_1": "2", "unnamed_2": "Strategy and Business Growth", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 63, "data": {"unnamed_0": "", "unnamed_1": "3", "unnamed_2": "Subsidiary Management", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 64, "data": {"unnamed_0": "", "unnamed_1": "4", "unnamed_2": "Operational Management", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 65, "data": {"unnamed_0": "", "unnamed_1": "5", "unnamed_2": "Quality, Safety, Health, and Environment", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 66, "data": {"unnamed_0": "", "unnamed_1": "6", "unnamed_2": "Human Resource and Organization Capability", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 67, "data": {"unnamed_0": "", "unnamed_1": "7", "unnamed_2": "Project Execution", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 68, "data": {"unnamed_0": "", "unnamed_1": "8", "unnamed_2": "Legal, Regulation and Compliance", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 69, "data": {"unnamed_0": "A. สูญเสียรายได้โดยตรง", "unnamed_1": "", "unnamed_2": "F - กำไรสุทธิต่ำกว่าเป้าหมาย", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 70, "data": {"unnamed_0": "B.ผลกระทบต่อลูกค้า", "unnamed_1": "", "unnamed_2": "F - กำไรขั้นต้นต่ำกว่าเป้าหมาย", "unnamed_3": "Likelyhood Level", "unnamed_4": "Impact Level", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 71, "data": {"unnamed_0": "C.ผลกระทบต่อชีวิตและความปลอดภัย", "unnamed_1": "", "unnamed_2": "F - รายได้ต่ำกว่าเป้าหมาย", "unnamed_3": "-", "unnamed_4": "-", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 72, "data": {"unnamed_0": "D.การหยุดชะงักของการปฏิบัติงาน/หน้าที่และงานประจำวัน", "unnamed_1": "", "unnamed_2": "F - ค่าใช้จ่ายสูงกว่าเป้าหมาย", "unnamed_3": "1", "unnamed_4": "1", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 73, "data": {"unnamed_0": "E.ผลกระทบต่อชื่อเสียง", "unnamed_1": "", "unnamed_2": "F - ผลตอบแทนการลงทุนต่ำกว่าเป้าหมาย", "unnamed_3": "2", "unnamed_4": "2", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 74, "data": {"unnamed_0": "F.ผลกระทบต่อสัญญา/ข้อตกลงระดับของการให้บริการ", "unnamed_1": "", "unnamed_2": "F - ประมาณลงทุนสูงกว่าที่ได้รับอนุมัติ", "unnamed_3": "3", "unnamed_4": "3", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 75, "data": {"unnamed_0": "G.ไม่สอดคล้องตามกฎหมายกำหนด", "unnamed_1": "", "unnamed_2": "B - ประสิทธิผลของกระบวนการ", "unnamed_3": "4", "unnamed_4": "4", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 76, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "B - ผลิตภัณฑ์หรือบริการ", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 77, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "B - การปฏิบัติตามกฎหมาย/กฎระเบียบ/ข้อบังคับ", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 78, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "B - ระยะเวลาดำเนินโครงการล่าช้า", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 79, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "B - การกำกับดูแลบริษัทในเครือ", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 80, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "I - ภาพลักษณ์ต่อสาธารณะ/สื่อ", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 81, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "I - ภาพลักษณ์ GPSC ต่อชุมชน", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 82, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "I - สิ่งแวดล้อม", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 83, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "C - ปริมาณขายผลิตภัณฑ์/บริการของ GPSC", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 84, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "C - ความพึงพอใจของลูกค้า/คู่ค้า", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 85, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "P - ความปลอดภัยและสุขภาพ", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}
+{"sheet": "Data1", "row_index": 86, "data": {"unnamed_0": "", "unnamed_1": "", "unnamed_2": "P - ความพึงพอใจของพนักงาน", "unnamed_3": "", "unnamed_4": "", "unnamed_5": ""}}

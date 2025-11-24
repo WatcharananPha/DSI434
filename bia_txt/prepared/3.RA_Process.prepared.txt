@@ -1,0 +1,260 @@
+python
+import re
+import json
+
+def to_snake_case(name):
+    """Converts a string to snake_case."""
+    # Replace non-alphanumeric/space with underscore, then strip leading/trailing underscores
+    name = re.sub(r'[^a-zA-Z0-9\s]+', '_', name)
+    name = re.sub(r'\s+', '_', name).strip('_')
+    # Convert CamelCase to snake_case (e.g., 'FooBar' -> 'foo_bar')
+    name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+    return name.lower()
+
+def clean_header_part(part):
+    """
+    Cleans a raw header part by stripping quotes, collapsing newlines to spaces,
+    trimming whitespace, and prioritizing English text if both English and Thai are present
+    or if there's an explanation in parentheses.
+    """
+    part = part.strip()
+
+    # Strip quotes if present
+    if part.startswith('"') and part.endswith('"'):
+        part = part[1:-1]
+    
+    # Collapse internal newlines to a single space
+    part = part.replace('\n', ' ').strip()
+
+    # Handle "(explanation)" pattern for brevity in key names
+    # e.g., "Mitigation Plan (new countermeasure...)" -> "Mitigation Plan"
+    parentheses_match = re.match(r'^(.*?)\s*\(.*\)$', part)
+    if parentheses_match:
+        part = parentheses_match.group(1).strip()
+    
+    # Prioritize English text if the string contains both English and Thai,
+    # assuming English comes first.
+    # This regex captures an initial segment of English letters, numbers, spaces,
+    # and common punctuation, followed by optional non-English characters.
+    contains_thai = any(0x0E00 <= ord(c) <= 0x0E7F for c in part)
+    contains_english = bool(re.search(r'[a-zA-Z]', part))
+
+    if contains_thai and contains_english:
+        english_part_match = re.match(r'^([A-Za-z0-9\s&()_/-]+)\s*[\u0E00-\u0E7F]*.*$', part, re.UNICODE)
+        if english_part_match:
+            part = english_part_match.group(1).strip()
+
+    return part
+
+def process_tsv_to_jsonl(tsv_data, sheet_name):
+    lines = tsv_data.strip().split('\n')
+    
+    if len(lines) < 2:
+        raise ValueError("TSV data must contain at least two header lines.")
+
+    # Read the two header lines
+    raw_h1_parts = lines[0].split('\t')
+    raw_h2_parts = lines[1].split('\t')
+    
+    header_keys = []
+    key_counts = {}
+    
+    # Determine the maximum number of columns across both header lines
+    num_cols = max(len(raw_h1_parts), len(raw_h2_parts))
+
+    for i in range(num_cols):
+        part1 = raw_h1_parts[i] if i < len(raw_h1_parts) else ''
+        part2 = raw_h2_parts[i] if i < len(raw_h2_parts) else ''
+
+        cleaned_part1 = clean_header_part(part1)
+        cleaned_part2 = clean_header_part(part2)
+        
+        combined_key_candidate = ''
+        if cleaned_part1:
+            combined_key_candidate = cleaned_part1
+        
+        if cleaned_part2:
+            if combined_key_candidate:
+                # Combine part1 and part2 if both are present
+                combined_key_candidate = f"{combined_key_candidate} {cleaned_part2}"
+            else:
+                # If only part2 is present, use it
+                combined_key_candidate = cleaned_part2
+
+        # If after combining, the key candidate is still empty, use a generic column name
+        if not combined_key_candidate:
+            final_key = f"column_{i+1}"
+        else:
+            final_key = to_snake_case(combined_key_candidate)
+            
+            # Ensure uniqueness for generated keys
+            base_key = final_key
+            key_counts[base_key] = key_counts.get(base_key, 0) + 1
+            if key_counts[base_key] > 1:
+                final_key = f"{base_key}_{key_counts[base_key]}"
+        
+        header_keys.append(final_key)
+
+    json_lines_output = []
+    row_index_counter = 0 # 1-based index for valid data rows
+    
+    # Process data rows starting from the third line (index 2)
+    for line in lines[2:]:
+        raw_values = line.split('\t')
+        
+        data_object = {}
+        all_empty_columns = True
+
+        for i in range(min(len(header_keys), len(raw_values))):
+            key = header_keys[i]
+            value = raw_values[i]
+            
+            # Trim leading/trailing spaces
+            value = value.strip()
+            
+            # Collapse internal newlines to a single space
+            value = value.replace('\n', ' ')
+            
+            # Add to data_object only if value is not empty after processing
+            if value:
+                data_object[key] = value
+                all_empty_columns = False
+        
+        # Drop rows with all-empty columns
+        if not all_empty_columns:
+            row_index_counter += 1
+            json_object = {
+                "sheet": sheet_name,
+                "row_index": row_index_counter,
+                "data": data_object
+            }
+            # Use ensure_ascii=False to correctly handle Thai characters
+            json_lines_output.append(json.dumps(json_object, ensure_ascii=False))
+            
+    return "\n".join(json_lines_output)
+
+# Input data
+tsv_data = """No.	"Product & Service
+ผลิตภัณฑ์และบริการ "	"Process
+กระบวนการผลิต"	"Risk Category
+ประเภทความเสี่ยง"	"Impact Type
+ประเภทผลกระทบ"	Sub-Dimension	"Posible Risk
+ความเสี่ยงที่เป็นไปได้"	"Existing Control 
+มาตรการควบคุมที่มีอยู่"	Risk Assessment	Unnamed: 9	Unnamed: 10	Unnamed: 11	Unnamed: 12	Unnamed: 13	Unnamed: 14	"Mitigation Plan
+(new countermeasure to reduce threats)"	Time Frame	Unnamed: 17	Responsible Person	Target	Unnamed: 20	Unnamed: 21	Unnamed: 22
+								I	L	R	R	MTPD	RTO	MBCO		From	To		I	L	R	R
+1	1.การผลิตไฟฟ้า	การรับวัตถุดิบ (น้ำDemin)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	ประสิทธิผลของกระบวนการ	"1.ถังกักเก็บน้ำชำรุดรั่วไหล
+"	"1.1จัดหาแหล่งน้ำสำรองจากแหล่งอื่นๆ เช่น WHA 
+1.2 จัดหาแหล่งน้ำสำรองจากแหล่งอื่นๆ เช่นเชื่อมระบบกับ Glow  & CUP3
+        "	4	1	E4	E4	24 ชม	1 ชม	1	-	-	-	-	4	1	E4	E4
+					ประสิทธิผลของกระบวนการ	"2.ท่อส่งเข้าระบบเสียหาย
+
+"	"2.1 มีการตรวจสอบ รายวัน 
+2.2มีทีมซ่อมบำรุง on call 24 hr
+      "	4	1	E4												
+					ผลิตภัณฑ์หรือ บริการ	"3.อุปกรณ์ควบคุมใช้งานไม่ได้
+"	"3.1มีการกำหนดแผนซ่อมบำรุงตามระยะเวลากำหนด
+3.2มีสัญญาเข้าซ่อมบำรุงระบบ         "	3	1	M11												
+2	1.การผลิตไฟฟ้า	การรับวัตถุดิบ (น้ำ Clearify water)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.ถังกักเก็บน้ำชำรุดรั่วไหล
+2.ท่อส่งเข้าระบบเสียหาย
+3.อุปกรณ์ควบคุมใช้งานไม่ได้
+"	"1.1จัดหาแหล่งน้ำxxx
+2.1มีการตรวจสอบ รายวัน 
+2.2มีทีมซ่อมบำรุง on call 24 hr
+3.1มีการกำหนดแผนซ่อมบำรุงตามระยะเวลากำหนด
+3.2มีสัญญาเข้าซ่อมบำรุงระบบ "	4	1	E4	E4	24 ชม	1 ชม	1	"1.ปรับลดปริมาณการใช้น้ำในกระบวนการผลิต
+2.พิจารณาหาแหล่งน้ำสำรอง เช่น รถขนส่งน้ำจากภายนอก
+3.หาแหล่งน้ำดิบเพิ่มอีกแหล่ง เช่น จากบริษัท EAST WATER    "	Jan	Dec	Operation	3	1	M11	M11
+3	1.การผลิตไฟฟ้า	การรับวัตถุดิบ (สารเคมี)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.ปริมาณสารเคมีไม่พอใช้งาน
+ 2.ถังกักเก็บสารเคมีชำรุดรั่วไหล"	"1.1มี On call ผู้จำหน่ายสารเคมี 
+(12 ชม.)
+1.2มีการควบคุมปริมาณขั้นต่ำ (Max-Min) สารเคมี
+2.1มีกำหนดการตรวจสอบและซ่อมบำรุงถังxxxxx"	3	1	M11	M11	24 ชม	1 ชม	1	1.จัดหาให้มีระบบถังสารเคมีสำรองเพิ่มอีก 1 ถัง ในการใช้งาน	Jan	Dec	Operation	3	1	M11	M11
+4	1.การผลิตไฟฟ้า	การรับวัตถุดิบ (ก๊าซเชื้อเพลิง)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.ไม่มีก๊าซหรือก๊าซไม่เพียงพอ
+2.ท่อส่งเข้าระบบเสียหาย, อุปกรณ์ควบคุมใช้งานไม่ได้ 
+3.ไฟไหม้"	"1.1มีการตรวจสอบ รายวัน 
+1.2มีทีมซ่อมบำรุง on call 24 hr
+2.1มีการกำหนดแผนซ่อมบำรุงตามระยะเวลากำหนด
+2.2มีสัญญาเข้าซ่อมบำรุงระบบ    
+3.1มีระบบดับเพลิงเครื่องจักร 2 ตัวเพื่อช่วยในการดับเพลิง"	4	1	E4	E4	48 ชม	1 ชม	1	"1.ทำระบบไฟฟ้าส่งจ่ายจาก GLOW,PEA มาจ่ายให้กับลูกค้าแทน    
+2.ทำระบบท่อไอน้ำจาก GLOW มาจ่ายให้กับลูกค้า"	Jan	Dec	Operation	3	1	M11	M11
+5	1.การผลิตไฟฟ้า	การรับวัตถุดิบ (น้ำมันเชื้อเพลิงสำหรับระบบดับเพลิง)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.ปริมาณน้ำมันเชื้อเพลิงไม่พอใช้งาน
+"	"1.มีระบบดับเพลิงเครื่องจักร 2 ตัวเพื่อช่วยในการดับเพลิง
+2.มีการซ้อมแผนฉุกเฉินเป็นประจำทุกๆปี
+3.มีการตรวจสอบอุปกรณ์เครื่องจักรตามแผนงานซ่อมบำรุงประจำปี"	2	2	M12	M12	48 ชม	1 ชม	1	"1.จัดหาให้มีระบบน้ำมันเชื้อเพลิงสำรองเพิ่ม ในการใช้งาน
+2.ติดต่อหน่วยงานที่เกี่ยวข้องเพื่อจัดเตรียมรถดับเพลิงในกรณีฉุกเฉิน (NPCS&E)"	Jan	Dec	SSHE	1	2	L15	L15
+6	1.การผลิตไฟฟ้า	การรับวัตถุดิบ (ไฟฟ้าสำหรับ Start up process)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.การผลิตหยุดชะงักเนื่องจากไม่มีกระแสไฟฟ้า
+2.ไม่สามารถ Start กระบวนการผลิตได้กรณีที่สายส่ง EGAT/ PEA ชำรุดส่งผลให้ Plant Blackout"	"1.1มีสัญญาการรับไฟฟ้าจากการไฟฟ้า
+2.1จัดทำแผนซ่อมบำรุง อุปกรณ์ตามระยะเวลาที่กำหนด 
+2.2มีทีม on call ซ่อมบำรุง  24 ชม.
+"	3	1	M11	M11	24 ชม	1 ชม	1	"1.ศึกษาการจัดหาแหล่งไฟฟ้าสำรองในการ Start plant จากแหล่งอื่น เช่น Diesel GEN.
+2.ศึกษาการเชื่อมต่อระบบกับ Glow ในการ Charge Back
+"	Jan	Dec	Engineering	2	1	L14	L14
+7	1.การผลิตไฟฟ้า	เดินเครื่องระบบ BOP (Cooling, Air Compressor )	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1. การผลิตหยุดเนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตหยุดเนื่องจากไม่มีน้ำ
+"	"1.1มีระบบ อัตโนมัติควบคุม 2 ตัวขึ้นไปในการใช้งานกระบวนการผลิต
+1.2มีระบบ by pass
+1.3มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+1.4มีการติดตั้งอุปกรณ์สำรอง 
+1.5มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+2.1มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet"	3	1	M11	M11	7 วัน	7 วัน	1	"1.สำรองติดตั้ง Mobile Air compressor ชั่วคราวโดยทำสัญญากับ Supplier
+"	Jan	Dec	Maintenance	1	1	L16	L16
+8	1.การผลิตไฟฟ้า	เดินเครื่องระบบ Fuel Gas	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		1.ไม่สามารถเดินเครื่องได้เนื่องจากไม่มีก๊าซทำให้ระบบเครื่องจักรการผลิตหยุดชะงัก	"1.1 มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+1.2 มีการติดตั้งอุปกรณ์สำรอง 
+1.3 มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet"	4	2	E3	E3	7 วัน	7 วัน	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall
+"	Jan	Dec	Maintenance	3	2	H7	H7
+9	1.การผลิตไฟฟ้า	เดินเครื่องระบบ Demin, Condensate และ Neutralization.	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.ไม่สามารถผลิตน้ำ Demin  ได้เนื่องจากไม่มีกระแสไฟฟ้า
+2.ปริมาณน้ำ Demin ไม่เพียงพอต่อการใช้งานในการบวนการผลิตและส่งให้ลูกค้าได้
+"	"1.1มีการติดตั้งระบบสำรองในการผลิตนำ Demin 4 units, Condensate 2 units.
+1.2ระบบ Pump Neutralization มี 2 unit สามารถได้สลับกันได้กรณีอีกตัวเสีย
+2.1มีระบบนำ RO เพิ่มอีก 2 units ในกระบวนการผลิตเพื่อช่วยผลิตน้ำได้
+2.2รับน้ำ Demin จาก WHA "	3	1	M11	M11	7 วัน	7 วัน	1	"1.พิจารณาหาแหล่งน้ำสำรอง เช่น รถขนส่ง
+2.จัดหาแหล่งน้ำสำรองจากแหล่งอื่นๆ เช่น เชื่อมระบบกับ Glow & CUP3"	Jan	Dec	Operation	2	1	L14	L14
+10	1.การผลิตไฟฟ้า	เดินเครื่องระบบ BFW และ Deaerator 	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1. ไม่สามารถเดินระบบได้เนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตหยุดเนื่องจากไม่มีน้ำ"	"1.1xxxxx
+2.1xxxxx
+"	4	1	E4	E4	7 วัน	7 วัน	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.หาแหล่งน้ำอื่นๆเช่น BFW จาก CUP3 ส่งให้ลูกค้าแทนได้"	Jan	Dec	Maintenance	3	1	M11	M11
+11	2.การผลิตไอน้ำ	เดินเครื่อง Aux Boiler , HRSG และ Emission Control.	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1. การผลิตไอน้ำหยุดเนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตไอน้ำหยุดเนื่องจากไม่มีน้ำ
+3.การผลิตไอน้ำหยุดเนื่องจากไม่มีเชื้อเพลิง
+4.การผลิตไอน้ำหยุดเนื่องจากปริมาณสารเคมีไม่พอใช้งาน
+5.ไม่สอดคล้องตามกฏหมาย ค่า Emission เกินมาตราฐาน เนื่องจากไม่มีสารเคมีใช้ในกระบวนการผลิต (No chemical)"	"1.1มีสัญญาการรับไฟฟ้าจากการไฟฟ้า
+2.1xxxx
+3.1xxxxx
+4.1มี On call ผู้จำหน่ายสารเคมี 
+(12 ชม.)
+4.2มีการควบคุมปริมาณขั้นต่ำ (Max-Min) สารเคมี
+5.1 มีระบบควบคุม Emission และระบบเตือนเมื่อค่าเกิดค่าที่ควบคุม"	3	2	H7	H7	7 วัน	7 วัน	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.หาแหล่งไอน้ำอื่นๆ เช่น รับจาก CUP3,CUP4&GLOW ส่งให้ลูกค้าแทนได้"	Jan	Dec	Maintenance	2	2	M12	M12
+12	1.การผลิตไฟฟ้า	เดินเครื่องระบบ GTG	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1. การผลิตไฟฟ้าหยุดเนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตไฟฟ้าหยุดเนื่องจากไม่มีก๊าซ หรือก๊าซไม่เพียงพอ    
+3.ไฟไหม้"	"1.1xxx
+2.1xxx
+3.1มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+3.2มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง
+3.3มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+3.4มีแผนการตรวจสอบระบบเครื่องจักร ตามระยะเวลาที่กำหนด"	4	2	E3	E3	140 วัน	140 วัน	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.หาแหล่งไฟฟ้าอื่นๆ เช่น รับจาก PEA,CUP4&GLOW ส่งให้ลูกค้าแทนได้"	Jan	Dec	Maintenance	3	2	H7	H7
+13	1.การผลิตไฟฟ้า	เดินเครื่องระบบส่งผ่านผลิตภัณฑ์ (สายไฟฟ้า)	Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ		"1.ไม่มีกระแสไฟฟ้า
+2.สายส่งไฟฟ้าชำรุดจึงไม่สามารถส่งกระแสไฟฟ้าให้กับลูกค้าได้"	"1.1xxx
+2.1มีการตรวจสอบอุปกรณ์ป้องกัน โดยพนักงานเดินเครื่อง และสายส่งโดยทีมงานซ่อมบำรุง อย่างประจำ
+2.2มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายไฟฟ้ารายปี
+ มีแผนการตรวจสอบระบบส่งจ่ายไฟฟ้าตามระยะเวลาที่กำหนด
+2.3มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน
+2.4จัดเตรียมสายไฟฟ้าสำรองไว้เปลี่ยนในกรณีเกิดเหตุฉุกเฉิน """
+sheet_name = "3.RA_Process"
+
+# Convert TSV to JSON Lines
+json_output = process_tsv_to_jsonl(tsv_data, sheet_name)
+print(json_output)
+json
+{"sheet": "3.RA_Process", "row_index": 1, "data": {"col_1": "No.", "col_2": "Product & Service 2.5 มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection) เพื่อป้องกันเครื่องจักรเสียหาย", "col_3": "3", "col_4": "1", "col_5": "M11", "col_6": "M11", "col_7": "7 วัน", "col_8": "7 วัน", "col_9": "1", "col_10": "1.เพิ่มระบบสายส่งเป็น 2 Feeder ใช้งาน 1 Feeder Standby เตรียมพร้อมอีก 1 Feeder (EGAT) 2.สลับแหล่งจ่ายไฟลูกค้า GPSC ไปรับยัง บริษัท Glow", "col_11": "Jan", "col_12": "Dec", "col_13": "Operation", "col_14": "2", "col_15": "1", "col_16": "L14", "col_17": "L14"}}
+{"sheet": "3.RA_Process", "row_index": 2, "data": {"col_1": "14", "col_2": "2.การผลิตไอน้ำ", "col_3": "เดินเครื่องระบบส่งผ่านผลิตภัณฑ์ (ท่อไอน้ำ)", "col_4": "Operational Management", "col_5": "6.กระบวนการทางธุรกิจและการปฏิบัติการ", "col_6": "", "col_7": "1.ไม่มีไอน้ำมายังท่อไอน้ำ 2. ท่อส่งไอน้ำชำรุด", "col_8": "1.1ต่อระบบส่งจ่ายไอน้ำ CUP1,3,4 ให้เชื่อมโยงกัน เพื่อสลับและเพื่อส่งจ่ายให้กับลูกค้าได้หลายช่องทาง 1.2ติดตั้งอุปกรณ์ป้องกันความเสียหายที่มีโอกาสเกิดกับระบบเชื่อมต่อ 2.1มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายไอน้ำรายปี 2.2มีแผนการตรวจสอบระบบส่งจ่ายไอน้ำตามระยะเวลาที่กำหนด 2.3มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน 2.4จัดเตรียม อะไหล่ที่ไว้ใช้ซ่อมท่อ ให้พร้อม พร้อมทีม ซ่อม online stop leak", "col_9": "4", "col_10": "1", "col_11": "E4", "col_12": "E4", "col_13": "7 วัน", "col_14": "7 วัน", "col_15": "1", "col_16": "1.ต่อและสลับแหล่งจ่ายไอน้ำของลูกค้า GPSC ไปรับยัง บริษัท Glow", "col_17": "Jan"}}
+{"sheet": "3.RA_Process", "row_index": 3, "data": {"col_1": "Dec", "col_2": "Operation", "col_3": "3", "col_4": "1", "col_5": "M11", "col_6": "M11", "col_7": "15", "col_8": "3.การผลิตน้ำอุตสาหกรรม", "col_9": "เดินเครื่องระบบส่งผ่านผลิตภัณฑ์ (ท่อน้ำ)", "col_10": "Operational Management", "col_11": "6.กระบวนการทางธุรกิจและการปฏิบัติการ", "col_12": "", "col_13": "1.ไม่มีน้ำในการส่ง 2.ท่อส่งน้ำชำรุดเนื่องจากอุบัติเหตุทางรถยนต์", "col_14": "1.1ต่อระบบส่งจ่ายน้ำ CUP1,3,4 ให้เชื่อมโยงกัน เพื่อสลับและเพื่อส่งจ่ายให้กับลูกค้าได้หลายช่องทาง 1.2ติดตั้งอุปกรณ์ป้องกันความเสียหายที่มีโอกาสเกิดกับระบบเชื่อมต่อ 2.1มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายน้ำรายปี 2.2มีแผนการตรวจสอบระบบส่งจ่ายน้ำตามระยะเวลาที่กำหนด 2.3มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน 2.4จัดเตรียม อะไหล่ที่ไว้ใช้ซ่อมท่อ ให้พร้อม พร้อมทีม ซ่อม online stop leak", "col_15": "4", "col_16": "1", "col_17": "E4"}}
+{"sheet": "3.RA_Process", "row_index": 4, "data": {"col_1": "E4", "col_2": "5 วัน", "col_3": "5 วัน", "col_4": "1", "col_5": "1.ต่อและสลับแหล่งจ่ายไอน้ำของลูกค้า GPSC ไปรับยัง บริษัท Glow", "col_6": "", "col_7": "Jan", "col_8": "Dec", "col_9": "Operation", "col_10": "2", "col_11": "1", "col_12": "L14", "col_13": "L14", "col_14": "16", "col_15": "1.การผลิตไฟฟ้า", "col_16": "การส่งมอบผลิตภัณฑ์ผ่าน Metering Station (ไฟฟ้า,ไอน้ำ, Demin water)", "col_17": "Operational Management"}}
+{"sheet": "3.RA_Process", "row_index": 5, "data": {"col_1": "6.กระบวนการทางธุรกิจและการปฏิบัติการ", "col_2": "", "col_3": "1.ไม่มีไฟฟ้าเนื่องจากสายส่งขาด 2.ไม่มีไอน้ำเนื่องจากท่อส่งชำรุด 3.ไม่มีน้ำ demin เนื่องจากท่อน้ำชำรุด 4.ไฟไหม้", "col_4": "3.1มีการติดตั้งระบบสำรองในการผลิตนำ Demin 4 units, Condensate 2 units. 4.1มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย  4.2มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง 4.3มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน", "col_5": "2", "col_6": "2", "col_7": "M12", "col_8": "M12", "col_9": "7 วัน", "col_10": "7 วัน", "col_11": "1", "col_12": "1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall ", "col_13": "Jan", "col_14": "Dec", "col_15": "Maintenance", "col_16": "1", "col_17": "2"}}
+{"sheet": "3.RA_Process", "row_index": 6, "data": {"col_1": "L15", "col_2": "L15", "col_3": "17", "col_4": "1.การผลิตไฟฟ้า", "col_5": "ส่งไฟฟ้าผ่านระบบ Sub station (GIS)", "col_6": "Operational Management", "col_7": "6.กระบวนการทางธุรกิจและการปฏิบัติการ", "col_8": "", "col_9": "1.Feeder เสียหายทำให้สูญเสียการจ่ายไฟให้กับลูกค้า 2.ไฟไหม้", "col_10": "1.1มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน 1.2มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน 1.3มีการทำประกัน 1.4การจัดเตรียมอะไหล่ Spare part บางตัว (30%) 2.1มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย  2.2มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดิน", "col_11": "4", "col_12": "1", "col_13": "E4", "col_14": "E4", "col_15": "90 วัน", "col_16": "90 วัน", "col_17": "1"}}
+{"sheet": "3.RA_Process", "row_index": 7, "data": {"col_1": "1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall", "col_2": "Jan", "col_3": "Dec", "col_4": "Maintenance", "col_5": "3", "col_6": "1", "col_7": "M11", "col_8": "M11", "col_9": "18", "col_10": "1.การผลิตไฟฟ้า", "col_11": "กำกับดูแล การจดมาตรวัดของวัตถุดิบและผลิตภัณฑ์", "col_12": "Operational Management", "col_13": "6.กระบวนการทางธุรกิจและการปฏิบัติการ", "col_14": "", "col_15": "1.มาตรวัดอ่านค่าผิดทำให้เกิดข้อผิดพลาดของข้อมูล", "col_16": "1.1มีการ Re-check โดยหัวหน้างาน และผู้เกี่ยวข้อง 1.2มีโปรแกรมคำนวณ", "col_17": "2"}}
+{"sheet": "3.RA_Process", "row_index": 8, "data": {"col_1": "2", "col_2": "M12", "col_3": "M12", "col_4": "24 ชม", "col_5": "1 ชม", "col_6": "1", "col_7": "1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall", "col_8": "Jan", "col_9": "Dec", "col_10": "Maintenance", "col_11": "1", "col_12": "2", "col_13": "L15", "col_14": "L15", "col_15": "19", "col_16": "1.การผลิตไฟฟ้า", "col_17": "ระบบควบคุมการผลิต ( UPS ,DCS)"}}
+{"sheet": "3.RA_Process", "row_index": 9, "data": {"col_1": "Operational Management", "col_2": "6.กระบวนการทางธุรกิจและการปฏิบัติการ", "col_3": "", "col_4": "1.ไม่มีกระแสไฟฟ้าจ่ายเข้าระบบ 2.ระบบ UPS failedและ หรือ ระบบ DCS failed", "col_5": "1.1มีระบบควบคุมเป็นแบบ ขนาน 2 ระบบ 2.1มีการตรวจสอบ PM ระบบ 2.2ในกรณีที่ระบบ failed จะมีการแจ้งเตือนและระบบ สำรองจะเข้ามาควบคุมแทน 2.3มี manual valve ที่หน้างาน 2.4มีby pass control valve ที่หน้างาน 2.5มีชำนาญการระบบ DCS vender oncall 24ชม.", "col_6": "4", "col_7": "2", "col_8": "E3", "col_9": "E3", "col_10": "60 วัน", "col_11": "60 วัน", "col_12": "1", "col_13": "1.ให้มีทีมซ่อมบำรุงชำนาญเฉพาะทาง ประสานงานกับทาง Vender และมีการเตรียมชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อใช้งานและไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall  2.ให้มีทีมซ่อมสายส่งของ Vender (Contactor)ตลอด24ชม.", "col_14": "Jan", "col_15": "Dec", "col_16": "Maintenance", "col_17": "3"}}

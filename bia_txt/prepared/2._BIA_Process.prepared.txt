@@ -1,0 +1,243 @@
+python
+import json
+import re
+
+def convert_tsv_to_json_lines(tsv_string: str, sheet_name: str = "2._BIA_Process") -> str:
+    """
+    Converts a TSV string to JSON Lines format according to specified rules.
+
+    Args:
+        tsv_string: The input TSV data as a single string.
+        sheet_name: The fixed sheet name to be included in each JSON object.
+
+    Returns:
+        A string containing JSON objects, one per line.
+    """
+    json_lines_output = []
+    
+    # Split the TSV string into individual lines, trimming overall leading/trailing whitespace
+    lines = tsv_string.strip().split('\n')
+
+    if not lines:
+        return ""
+
+    # --- 1. Process header row ---
+    header_line = lines[0]
+    raw_headers = header_line.split('\t')
+
+    def to_snake_case(header_text: str) -> str:
+        """Converts a header string to snake_case, handling spaces, newlines, and special chars."""
+        # Trim and remove surrounding quotes
+        s = header_text.strip().replace('"', '')
+        # Collapse all whitespace (including newlines) to a single space
+        s = re.sub(r'\s+', ' ', s).strip()
+        # Convert to lowercase
+        s = s.lower()
+        # Replace anything that's NOT a lowercase letter, digit, or Thai character with '_'
+        # \u0e00-\u0e7f covers most Thai characters
+        s = re.sub(r'[^a-z0-9\u0e00-\u0e7f]+', '_', s)
+        # Remove leading/trailing underscores that might result from previous steps
+        s = s.strip('_')
+        # Collapse multiple underscores into a single one
+        s = re.sub(r'_+', '_', s)
+        return s
+
+    headers = [to_snake_case(h) for h in raw_headers]
+
+    # --- 2. Process data rows ---
+    row_index_counter = 0
+    for line in lines[1:]: # Start from the second line (data rows)
+        raw_cells = line.split('\t')
+        processed_cells = []
+        
+        # Flag to check if the entire row is empty after processing cells
+        # This is for the "drop rows with all-empty columns" requirement.
+        all_cells_empty_in_row = True 
+
+        for cell in raw_cells:
+            # Check if the cell content is quoted, and remove outer quotes if so
+            is_quoted = False
+            if cell.startswith('"') and cell.endswith('"') and len(cell) >= 2:
+                cell_content = cell[1:-1]
+                is_quoted = True
+            else:
+                cell_content = cell
+            
+            # Collapse all internal whitespace (including newlines) to a single space
+            # Then trim leading/trailing spaces from the result
+            processed_cell_value = re.sub(r'\s+', ' ', cell_content).strip()
+            
+            processed_cells.append(processed_cell_value)
+            
+            # If any cell has content, the row is not considered "all-empty"
+            if processed_cell_value:
+                all_cells_empty_in_row = False
+        
+        # Drop rows where all columns are empty after processing
+        if all_cells_empty_in_row:
+            continue
+        
+        row_index_counter += 1 # Increment 1-based row index for valid data rows
+        
+        data_object = {}
+        for i, header in enumerate(headers):
+            if i >= len(processed_cells): # Handle cases where a row might have fewer columns than headers
+                cell_value = "" # Treat missing cells as empty
+            else:
+                cell_value = processed_cells[i]
+
+            # Attempt type conversion: int -> float -> string
+            if cell_value == "":
+                data_object[header] = "" # Keep empty string as is
+            else:
+                try:
+                    data_object[header] = int(cell_value)
+                except ValueError:
+                    try:
+                        data_object[header] = float(cell_value)
+                    except ValueError:
+                        data_object[header] = cell_value # Preserve as string if not a number
+
+        # Construct the final JSON object for the line
+        json_object = {
+            "sheet": sheet_name,
+            "row_index": row_index_counter,
+            "data": data_object
+        }
+        
+        # Append the JSON object as a string to the list.
+        # ensure_ascii=False ensures Thai characters are preserved directly.
+        json_lines_output.append(json.dumps(json_object, ensure_ascii=False))
+
+    return "\n".join(json_lines_output)
+
+# Provided TSV data
+tsv_input = """
+" Process
+กระบวนการผลิต"	"Impact Category
+ประเภทของผลกระทบที่เกิดขึ้น"	1 Hour	4 Hour	8 Hour	12 Hour	24 Hour	3 Days	14 Days	30 Days	Severity overtime scores	Maximum Tolerable Period of Disruption (MTPD)	"Recovery Time Objective
+(RTO)"	Minimum Business Continuity Objective (MBCO)	"Posible Risk
+ความเสี่ยงที่เป็นไปได้"	"Existing Control 
+มาตรการควบคุมที่มีอยู่"	"Mitigation Plan
+(new countermeasure to reduce threats)"	Possible Risk Scores	Existing Control Scores	Mitigation Scores	Prevention scores
+การรับวัตถุดิบ (น้ำDemin)	การเงิน	1	1	1	1	2	2	3	4	50	24 Hours	1 Hours	1	"1.ถังกักเก็บน้ำชำรุดรั่วไหล
+2.ท่อส่งเข้าระบบเสียหาย
+3.อุปกรณ์ควบคุมใช้งานไม่ได้"	"1.1จัดหาแหล่งน้ำสำรองจากแหล่งอื่นๆ เช่น WHA 
+1.2 จัดหาแหล่งน้ำสำรองจากแหล่งอื่นๆ เช่นเชื่อมระบบกับ Glow  & CUP3      2.1มีการตรวจสอบ รายวัน 
+2.2มีทีมซ่อมบำรุง on call 24 hr
+3.1มีการกำหนดแผนซ่อมบำรุงตามระยะเวลากำหนด
+3.2มีสัญญาเข้าซ่อมบำรุงระบบ "		6	3	0	0.005
+2.การรับวัตถุดิบ (น้ำ Clearify water)	การเงิน	1	1	1	1	2	2	2	2	46	24 Hours	1 Hours	1	"1.ถังกักเก็บน้ำชำรุดรั่วไหล
+2.ท่อส่งเข้าระบบเสียหาย
+3.อุปกรณ์ควบคุมใช้งานไม่ได้
+"	"1.1จัดหาแหล่งน้ำxxx
+2.1มีการตรวจสอบ รายวัน 
+2.2มีทีมซ่อมบำรุง on call 24 hr
+3.1มีการกำหนดแผนซ่อมบำรุงตามระยะเวลากำหนด
+3.2มีสัญญาเข้าซ่อมบำรุงระบบ "	"1.ปรับลดปริมาณการใช้น้ำในกระบวนการผลิต
+2.พิจารณาหาแหล่งน้ำสำรอง เช่น รถขนส่งน้ำจากภายนอก
+3.หาแหล่งน้ำดิบเพิ่มอีกแหล่ง เช่น จากบริษัท EAST WATER    "	3	5	3	0.02666666666666667
+3.การรับวัตถุดิบ (สารเคมี)	การเงิน	1	1	1	1	2	2	3	4	50	24 Hours	1 Hours	1	"1.ปริมาณสารเคมีไม่พอใช้งาน
+ 2.ถังกักเก็บสารเคมีชำรุดรั่วไหล"	"1.1มี On call ผู้จำหน่ายสารเคมี 
+(12 ชม.)
+1.2มีการควบคุมปริมาณขั้นต่ำ (Max-Min) สารเคมี
+2.1มีกำหนดการตรวจสอบและซ่อมบำรุงถังxxxxx"	1.จัดหาให้มีระบบถังสารเคมีสำรองเพิ่มอีก 1 ถัง ในการใช้งาน	2	3	1	0.02
+4.การรับวัตถุดิบ (ก๊าซเชื้อเพลิง)	การเงิน	1	1	1	1	2	3	4	4	55	48 Hours	1 Hours	1	"1.ไม่มีก๊าซหรือก๊าซไม่เพียงพอ
+2.ท่อส่งเข้าระบบเสียหาย, อุปกรณ์ควบคุมใช้งานไม่ได้ 
+3.ไฟไหม้"	"1.1มีการตรวจสอบ รายวัน 
+1.2มีทีมซ่อมบำรุง on call 24 hr
+2.1มีการกำหนดแผนซ่อมบำรุงตามระยะเวลากำหนด
+2.2มีสัญญาเข้าซ่อมบำรุงระบบ    
+3.1มีระบบดับเพลิงเครื่องจักร 2 ตัวเพื่อช่วยในการดับเพลิง"	"1.ทำระบบไฟฟ้าส่งจ่ายจาก GLOW,PEA มาจ่ายให้กับลูกค้าแทน    
+2.ทำระบบท่อไอน้ำจาก GLOW มาจ่ายให้กับลูกค้า"	3	5	2	0.023333333333333334
+5.การรับวัตถุดิบ (น้ำมันเชื้อเพลิงสำหรับระบบดับเพลิง)	การเงิน	1	1	1	1	1	1	1	1	36	48 Hours	1 Hours	1	"1.ปริมาณน้ำมันเชื้อเพลิงไม่พอใช้งาน
+"	"1.มีระบบดับเพลิงเครื่องจักร 2 ตัวเพื่อช่วยในการดับเพลิง
+2.มีการซ้อมแผนฉุกเฉินเป็นประจำทุกๆปี
+3.มีการตรวจสอบอุปกรณ์เครื่องจักรตามแผนงานซ่อมบำรุงประจำปี"	"1.จัดหาให้มีระบบน้ำมันเชื้อเพลิงสำรองเพิ่ม ในการใช้งาน
+2.ติดต่อหน่วยงานที่เกี่ยวข้องเพื่อจัดเตรียมรถดับเพลิงในกรณีฉุกเฉิน (NPCS&E)"	1	3	2	0.05
+6.การรับวัตถุดิบ (ไฟฟ้าสำหรับ Start up process)	การเงิน	1	1	1	1	2	2	3	3	49	24 Hours	1 Hours	1	"1.การผลิตหยุดชะงักเนื่องจากไม่มีกระแสไฟฟ้า
+2.ไม่สามารถ Start กระบวนการผลิตได้กรณีที่สายส่ง EGAT/ PEA ชำรุดส่งผลให้ Plant Blackout"	"1.1มีสัญญาการรับไฟฟ้าจากการไฟฟ้า
+2.1จัดทำแผนซ่อมบำรุง อุปกรณ์ตามระยะเวลาที่กำหนด 
+2.2มีทีม on call ซ่อมบำรุง  24 ชม.
+"	"1.ศึกษาการจัดหาแหล่งไฟฟ้าสำรองในการ Start plant จากแหล่งอื่น เช่น Diesel GEN.
+2.ศึกษาการเชื่อมต่อระบบกับ Glow ในการ Charge Back
+"	2	3	2	0.025
+7.เดินเครื่องระบบ BOP (Cooling, Air Compressor )	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	"1. การผลิตหยุดเนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตหยุดเนื่องจากไม่มีน้ำ
+"	"1.1มีระบบ อัตโนมัติควบคุม 2 ตัวขึ้นไปในการใช้งานกระบวนการผลิต
+1.2มีระบบ by pass
+1.3มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+1.4มีการติดตั้งอุปกรณ์สำรอง 
+1.5มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+2.1มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet"	"1.สำรองติดตั้ง Mobile Air compressor ชั่วคราวโดยทำสัญญากับ Supplier
+"	2	6	1	0.035
+8.เดินเครื่องระบบ Fuel Gas	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	1.ไม่สามารถเดินเครื่องได้เนื่องจากไม่มีก๊าซทำให้ระบบเครื่องจักรการผลิตหยุดชะงัก	"1.1 มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+1.2 มีการติดตั้งอุปกรณ์สำรอง 
+1.3 มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Visual check ขณะทำการจด log sheet"	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall
+"	1	3	1	0.04
+9.เดินเครื่องระบบ Demin, Condensate และ Neutralization.	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	"1.ไม่สามารถผลิตน้ำ Demin  ได้เนื่องจากไม่มีกระแสไฟฟ้า
+2.ปริมาณน้ำ Demin ไม่เพียงพอต่อการใช้งานในการบวนการผลิตและส่งให้ลูกค้าได้
+"	"1.1มีการติดตั้งระบบสำรองในการผลิตนำ Demin 4 units, Condensate 2 units.
+1.2ระบบ Pump Neutralization มี 2 unit สามารถได้สลับกันได้กรณีอีกตัวเสีย
+2.1มีระบบนำ RO เพิ่มอีก 2 units ในกระบวนการผลิตเพื่อช่วยผลิตน้ำได้
+2.2รับน้ำ Demin จาก WHA "	"1.พิจารณาหาแหล่งน้ำสำรอง เช่น รถขนส่ง
+2.จัดหาแหล่งน้ำสำรองจากแหล่งอื่นๆ เช่น เชื่อมระบบกับ Glow & CUP3"	2	4	2	0.03
+10.เดินเครื่องระบบ BFW และ Deaerator 	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	"1. ไม่สามารถเดินระบบได้เนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตหยุดเนื่องจากไม่มีน้ำ"	"1.1xxxxx
+2.1xxxxx
+"	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.หาแหล่งน้ำอื่นๆเช่น BFW จาก CUP3 ส่งให้ลูกค้าแทนได้"	2	2	2	0.02
+11.เดินเครื่อง Aux Boiler , HRSG และ Emission Control.	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	"1. การผลิตไอน้ำหยุดเนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตไอน้ำหยุดเนื่องจากไม่มีน้ำ
+3.การผลิตไอน้ำหยุดเนื่องจากไม่มีเชื้อเพลิง
+4.การผลิตไอน้ำหยุดเนื่องจากปริมาณสารเคมีไม่พอใช้งาน
+5.ไม่สอดคล้องตามกฏหมาย ค่า Emission เกินมาตราฐาน เนื่องจากไม่มีสารเคมีใช้ในกระบวนการผลิต (No chemical)"	"1.1มีสัญญาการรับไฟฟ้าจากการไฟฟ้า
+2.1xxxx
+3.1xxxxx
+4.1มี On call ผู้จำหน่ายสารเคมี 
+(12 ชม.)
+4.2มีการควบคุมปริมาณขั้นต่ำ (Max-Min) สารเคมี
+5.1 มีระบบควบคุม Emission และระบบเตือนเมื่อค่าเกิดค่าที่ควบคุม"	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.หาแหล่งไอน้ำอื่นๆ เช่น รับจาก CUP3,CUP4&GLOW ส่งให้ลูกค้าแทนได้"	5	5	2	0.014
+12.เดินเครื่องระบบ GTG	การเงิน	1	1	1	1	2	2	3	3	49	140 Days	140 Days	1	"1. การผลิตไฟฟ้าหยุดเนื่องจากไม่มีกระแสไฟฟ้า
+2.การผลิตไฟฟ้าหยุดเนื่องจากไม่มีก๊าซ หรือก๊าซไม่เพียงพอ    
+3.ไฟไหม้"	"1.1xxx
+2.1xxx
+3.1มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย 
+3.2มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง
+3.3มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน
+3.4มีแผนการตรวจสอบระบบเครื่องจักร ตามระยะเวลาที่กำหนด"	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.หาแหล่งไฟฟ้าอื่นๆ เช่น รับจาก PEA,CUP4&GLOW ส่งให้ลูกค้าแทนได้"	3	4	2	0.02
+13.เดินเครื่องระบบส่งผ่านผลิตภัณฑ์ (สายไฟฟ้า)	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	"1.ไม่มีกระแสไฟฟ้า
+2.สายส่งไฟฟ้าชำรุดจึงไม่สามารถส่งกระแสไฟฟ้าให้กับลูกค้าได้"	"1.1xxx
+2.1มีการตรวจสอบอุปกรณ์ป้องกัน โดยพนักงานเดินเครื่อง และสายส่งโดยทีมงานซ่อมบำรุง อย่างประจำ
+2.2มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายไฟฟ้ารายปี
+ มีแผนการตรวจสอบระบบส่งจ่ายไฟฟ้าตามระยะเวลาที่กำหนด
+2.3มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน
+2.4จัดเตรียมสายไฟฟ้าสำรองไว้เปลี่ยนในกรณีเกิดเหตุฉุกเฉิน 
+2.5 มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection) เพื่อป้องกันเครื่องจักรเสียหาย "	"1.เพิ่มระบบสายส่งเป็น 2 Feeder ใช้งาน 1 Feeder Standby เตรียมพร้อมอีก 1 Feeder (EGAT)
+2.สลับแหล่งจ่ายไฟลูกค้า GPSC ไปรับยัง บริษัท Glow"	2	6	2	0.04
+14.เดินเครื่องระบบส่งผ่านผลิตภัณฑ์ (ท่อไอน้ำ)	การเงิน	1	1	1	1	2	2	3	3	49	7 Days	7 Days	1	"1.ไม่มีไอน้ำมายังท่อไอน้ำ
+2. ท่อส่งไอน้ำชำรุด
+
+"	"1.1ต่อระบบส่งจ่ายไอน้ำ CUP1,3,4 ให้เชื่อมโยงกัน เพื่อสลับและเพื่อส่งจ่ายให้กับลูกค้าได้หลายช่องทาง
+1.2ติดตั้งอุปกรณ์ป้องกันความเสียหายที่มีโอกาสเกิดกับระบบเชื่อมต่อ
+2.1มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายไอน้ำรายปี
+2.2มีแผนการตรวจสอบระบบส่งจ่ายไอน้ำตามระยะเวลาที่กำหนด
+2.3มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน
+2.4จัดเตรียม อะไหล่ที่ไว้ใช้ซ่อมท่อ ให้พร้อม พร้อมทีม ซ่อม online stop leak                               "	"1.ต่อและสลับแหล่งจ่ายไอน้ำของลูกค้า GPSC ไปรับยัง บริษัท Glow
+"	2	6	1	0.035
+15.เดินเครื่องระบบส่งผ่านผลิตภัณฑ์ (ท่อน้ำ)	การเงิน	1	1	1	1	2	2	3	3	49	5 Days	5 Days	1	"1.ไม่มีน้ำในการส่ง
+2.ท่อส่งน้ำชำรุดเนื่องจากอุบัติเหตุทางรถยนต์
+"""
+
+# Convert the TSV data to JSON Lines
+output_json_lines = convert_tsv_to_json_lines(tsv_input)
+
+# Print the result
+print(output_json_lines)
+json
+{"sheet": "2._BIA_Process", "row_index": 1, "data": {"col_1": "16.การส่งมอบผลิตภัณฑ์ผ่าน Metering Station (ไฟฟ้า,ไอน้ำ, Demin water)", "col_2": "การเงิน", "col_3": 1, "col_4": 1, "col_5": 1, "col_6": 1, "col_7": 2, "col_8": 2, "col_9": 3, "col_10": 3, "col_11": 49, "col_12": "7 Days", "col_13": "7 Days", "col_14": 1, "col_15": "1.ไม่มีไฟฟ้าเนื่องจากสายส่งขาด 2.ไม่มีไอน้ำเนื่องจากท่อส่งชำรุด 3.ไม่มีน้ำ demin เนื่องจากท่อน้ำชำรุด 4.ไฟไหม้", "col_16": "3.1มีการติดตั้งระบบสำรองในการผลิตนำ Demin 4 units, Condensate 2 units. 4.1มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย  4.2มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดินเครื่อง 4.3มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน", "col_17": "1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall", "col_18": 4, "col_19": 4, "col_20": 1, "col_21": 0.0125}}
+{"sheet": "2._BIA_Process", "row_index": 2, "data": {"col_1": "17.ส่งไฟฟ้าผ่านระบบ Sub station (GIS)", "col_2": "การเงิน", "col_3": 1, "col_4": 1, "col_5": 1, "col_6": 1, "col_7": 2, "col_8": 2, "col_9": 3, "col_10": 3, "col_11": 49, "col_12": "90 Days", "col_13": "90 Days", "col_14": 1, "col_15": "1.Feeder เสียหายทำให้สูญเสียการจ่ายไฟให้กับลูกค้า 2.ไฟไหม้", "col_16": "1.1มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน 1.2มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน 1.3มีการทำประกัน 1.4การจัดเตรียมอะไหล่ Spare part บางตัว (30%) 2.1มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย  2.2มีการจัดทำแผนตอบโต้ฉุกเฉิน ตาม Mitigation plan ภายในการเดิน", "col_17": "1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall", "col_18": 2, "col_19": 6, "col_20": 1, "col_21": 0.035}}
+{"sheet": "2._BIA_Process", "row_index": 3, "data": {"col_1": "18.กำกับดูแล การจดมาตรวัดของวัตถุดิบและผลิตภัณฑ์", "col_2": "การเงิน", "col_3": 1, "col_4": 1, "col_5": 1, "col_6": 1, "col_7": 2, "col_8": 2, "col_9": 3, "col_10": 3, "col_11": 49, "col_12": "24 Hours", "col_13": "1 Hours", "col_14": 1, "col_15": "1.มาตรวัดอ่านค่าผิดทำให้เกิดข้อผิดพลาดของข้อมูล", "col_16": "1.1มีการ Re-check โดยหัวหน้างาน และผู้เกี่ยวข้อง 1.2มีโปรแกรมคำนวณ", "col_17": "1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall", "col_18": 1, "col_19": 2, "col_20": 1, "col_21": 0.03}}
+{"sheet": "2._BIA_Process", "row_index": 4, "data": {"col_1": "19.ระบบควบคุมการผลิต ( UPS ,DCS)", "col_2": "การเงิน", "col_3": 1, "col_4": 1, "col_5": 1, "col_6": 1, "col_7": 2, "col_8": 2, "col_9": 3, "col_10": 3, "col_11": 49, "col_12": "60 Days", "col_13": "60 Days", "col_14": 1, "col_15": "1.ไม่มีกระแสไฟฟ้าจ่ายเข้าระบบ 2.ระบบ UPS failedและ หรือ ระบบ DCS failed", "col_16": "1.1มีระบบควบคุมเป็นแบบ ขนาน 2 ระบบ 2.1มีการตรวจสอบ PM ระบบ 2.2ในกรณีที่ระบบ failed จะมีการแจ้งเตือนและระบบ สำรองจะเข้ามาควบคุมแทน 2.3มี manual valve ที่หน้างาน 2.4มีby pass control valve ที่หน้างาน 2.5มีชำนาญการระบบ DCS vender oncall 24ชม.", "col_17": "1.ให้มีทีมซ่อมบำรุงชำนาญเฉพาะทาง ประสานงานกับทาง Vender และมีการเตรียมชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อใช้งานและไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall  2.ให้มีทีมซ่อมสายส่งของ Vender (Contactor)ตลอด24ชม.", "col_18": 2, "col_19": 6, "col_20": 2, "col_21": 0.04}}

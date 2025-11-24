@@ -1,0 +1,28 @@
+" Product & Service
+"	"Impact Category
+"	1 Hour	4 Hour	8 Hour	12 Hour	24 Hour	3 Days	14 Days	30 Days	 Serverity over time (scores)	Financial impact (level)
+ABCT breaker 5YB-01 trip by relay 87L operate 	1. การเงิน	1	1	1	1	1	1	2	2	39	2
+Plant islanding due to ban chang substation switching line to bay spare (inter trip not support this function)	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG-11 trip by 1391VA979HH and PEA 1YB-01 OPEN plant Islanding by relay 21/21N Zone1	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG-14 was tripped by Load GEAR#1&2 AXIS VIBRAT.high	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+"GTG-11 was tripped by alarm ""TAHH 534-541 Brg.Metal Temp high trip"""	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+"GTG11 was tripped by ""Generator Vibration high trip"""	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+Close 52Aux (GTG-12) 87T operate 52L1 Open,52G Open and GTG-12 trip	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+Aux Boiler trip by burner inlet fuel gas pressure low low	1. การเงิน	1	1	1	1	1	1	1	1	36	3
+Plant islanding, 1YB01 open by inter trip 5YB01 operate from Banchang substation	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+PEA Maptaphut3 substation tripped. This event impacted to customers (MIGP ,ABCT, LLDPE2) tripped.	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG11&HRSG11 and GTG12&HRSG12 tripped.	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG15&HRSG15 tripped.	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+CUP1 plant blackout.	1. การเงิน	1	1	1	1	2	2	2	2	46	2
+GTG12 tripped.           	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG16 tripped.     	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+Plant islanding by external fault.(distance relay operated)	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG13 GEN Breaker 52G opened by lost of power 400 V supply to ACC. Motors       	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+Plant islanding from external fault (distance relay Z1 operated) impact to customers some load trip               	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG11 was tripped by alarm seismic vibration GEN HH trip (39VT) & GTG16 was trip by alarm 77HT module speed signal loss	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG11 was tripped by alarm seismic vibration GEN HH trip	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG11 was tripped by alarm vibration 1391VAHH729X HH trip	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+Aux Boiler trip by burner inlet fuel gas pressure low low 	1. การเงิน	1	1	1	1	1	1	1	1	36	3
+GTG11 was tripped by alarm vibration 1391VAHH729X HH trip	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+GTG15 was tripped by alarm VPRO Diagnostic 	1. การเงิน	1	1	1	1	1	1	2	2	39	3
+PTTAC 115 kV CB 7YB-01 opened to PTTAC was tripped by alarm reverse power relay	1. การเงิน	1	1	1	1	1	1	2	2	39	2

@@ -1,0 +1,26 @@
+วันเดือนปีที่เกิดเหตุ	รายละเอียด	ระดับความรุนแรง	ความสำคัญในการประเมิน BIA
+9-Mar-20	ABCT breaker 5YB-01 trip by relay 87L operate	2	สำคัญ
+24-May-20	Plant islanding due to ban chang substation switching line to bay spare (inter trip not support this function)	3	ไม่สำคัญ
+22-Jun-20	GTG-11 trip by 1391VA979HH and PEA 1YB-01 OPEN plant Islanding by relay 21/21N Zone1	3	ไม่สำคัญ
+27-Jun-20	GTG-14 was tripped by Load GEAR#1&2 AXIS VIBRAT.high	3	ไม่สำคัญ
+13-Aug-20	GTG-11 was tripped by alarm TAHH 534-541 Brg.Metal Temp high trip	3	ไม่สำคัญ
+1-Sep-20	GTG11 was tripped by Generator Vibration high trip	3	ไม่สำคัญ
+26-Nov-20	Close 52Aux (GTG-12) 87T operate 52L1 Open,52G Open and GTG-12 trip	3	ไม่สำคัญ
+25-Feb-21	Aux Boiler trip by burner inlet fuel gas pressure low low	3	ไม่สำคัญ
+19-Feb-21 16:00	Plant islanding, 1YB01 open by inter trip 5YB01 operate from Banchang substation	3	ไม่สำคัญ
+13-Apr-21 02:39	PEA Maptaphut3 substation tripped. This event impacted to customers (MIGP ,ABCT, LLDPE2) tripped.	3	ไม่สำคัญ
+14-Apr-21 11:15	GTG11&HRSG11 and GTG12&HRSG12 tripped.	3	ไม่สำคัญ
+14-Apr-21 11:28	GTG15&HRSG15 tripped.	3	ไม่สำคัญ
+20-Apr-21 14:33	CUP1 plant blackout.	2	สำคัญ
+29-Apr-21 18:24	GTG12 tripped.	3	ไม่สำคัญ
+6-May-21 23:55	GTG16 tripped.	3	ไม่สำคัญ
+10-May-21 11:44	Plant islanding by external fault.(distance relay operated)  12:17 Synchronize to PEA.	3	ไม่สำคัญ
+16-May-21 23:55	GTG13 GEN Breaker 52G opened by lost of power 400 V supply to ACC. Motors	3	ไม่สำคัญ
+28-May-21 04:27	Plant islanding from external fault (distance relay Z1 operated) impact to customers some load trip	3	ไม่สำคัญ
+9-Jul-21 10:29	GTG11 was tripped by alarm seismic vibration GEN HH trip (39VT) & GTG16 was trip by alarm 77HT module speed signal loss	3	ไม่สำคัญ
+15-Jul-21 01:05	GTG11 was tripped by alarm seismic vibration GEN HH trip	3	ไม่สำคัญ
+19-Aug-21 01:05	GTG11 was tripped by alarm vibration 1391VAHH729X HH trip	3	ไม่สำคัญ
+22-Sep-21 04:45	Aux Boiler trip by burner inlet fuel gas pressure low low	3	ไม่สำคัญ
+21-Oct-21 17:01	GTG11 was tripped by alarm vibration 1391VAHH729X HH trip	3	ไม่สำคัญ
+9-Nov-21 17:01	GTG15 was tripped by alarm VPRO Diagnostic	3	ไม่สำคัญ
+27-Nov-21 11:42	PTTAC 115 kV CB 7YB-01 opened to PTTAC was tripped by alarm reverse power relay	2	สำคัญ

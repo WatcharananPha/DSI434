@@ -1,0 +1,245 @@
+python
+import re
+import json
+
+def clean_and_snake_case_header(text):
+    """
+    Cleans a header text by removing parenthetical content, collapsing newlines,
+    stripping unwanted characters (like Thai script for keys), and converting to snake_case.
+    """
+    # Remove content in parentheses, e.g., "(new countermeasure to reduce threats)"
+    text = re.sub(r'\s*\(.*?\)\s*', '', text)
+    # Collapse internal newlines to a single space and strip leading/trailing spaces
+    text = text.replace('\n', ' ').strip()
+
+    # Filter out characters that are typically not desired in JSON keys (e.g., Thai script).
+    # Keep only ASCII letters, numbers, and spaces/underscores that serve as separators.
+    cleaned_text_parts = []
+    for char in text:
+        if 'a' <= char <= 'z' or 'A' <= char <= 'Z' or '0' <= char <= '9':
+            cleaned_text_parts.append(char)
+        elif char.isspace() or char == '_': 
+            # Convert spaces to underscores early to help with splitting/joining
+            cleaned_text_parts.append('_')
+        # All other characters (like Thai script or other symbols) are dropped.
+    cleaned_text = "".join(cleaned_text_parts)
+    
+    # Convert to lowercase, split by underscores (which might be multiple due to spaces),
+    # filter out empty strings from splitting, and re-join with a single underscore.
+    snake_cased = '_'.join(filter(None, cleaned_text.lower().split('_')))
+    
+    # Remove any leading/trailing underscores that might remain
+    snake_cased = snake_cased.lstrip('_').rstrip('_')
+    
+    return snake_cased
+
+def process_tsv_to_json_lines(tsv_string, sheet_name="3.RA_Crisis"):
+    """
+    Converts a TSV string to JSON Lines format, handling complex multi-row headers,
+    data cleaning, and specific output requirements.
+    """
+    lines = tsv_string.strip().split('\n')
+
+    # Based on the provided TSV, header rows are at 0-indexed positions 5 and 6.
+    # Data rows start from 0-indexed position 7.
+    HEADER_ROW_1_IDX = 5
+    HEADER_ROW_2_IDX = 6
+    FIRST_DATA_ROW_IDX = 7
+
+    h1_raw = lines[HEADER_ROW_1_IDX]
+    h2_raw = lines[HEADER_ROW_2_IDX]
+    
+    # Determine the number of columns by splitting the first actual data row.
+    # This ensures our header processing matches the data's column count.
+    num_cols = len(lines[FIRST_DATA_ROW_IDX].split('\t'))
+
+    h1_cells_raw = h1_raw.split('\t')
+    h2_cells_raw = h2_raw.split('\t')
+
+    # Pad shorter header cell lists with empty strings or truncate longer ones
+    # to ensure they precisely match the number of data columns.
+    h1_cells = (h1_cells_raw + [''] * num_cols)[:num_cols]
+    h2_cells = (h2_cells_raw + [''] * num_cols)[:num_cols]
+
+    # --- Header generation logic ---
+    final_headers_temp = []
+    current_h1_base = "" # Tracks the last non-empty header from the first header row
+
+    for i in range(num_cols):
+        h1_val = h1_cells[i].strip()
+        h2_val = h2_cells[i].strip()
+
+        effective_h1 = ""
+        if h1_val:
+            effective_h1 = h1_val
+            current_h1_base = h1_val # Update base for spanning headers
+        else:
+            effective_h1 = current_h1_base # If h1 cell is empty, it's a span of the last base header
+
+        header_part = effective_h1
+        if h2_val:
+            # If there's a sub-header, combine it with the effective main header
+            header_part = f"{effective_h1}_{h2_val}"
+        else:
+            # If both h1 and h2 for this cell are empty, and it's part of a span,
+            # we need to assign a unique name (e.g., for `Crisis Senario` spanning column 2).
+            if not h1_val and not h2_val:
+                if current_h1_base:
+                    header_part = f"{current_h1_base}_unnamed_{i}"
+                else: 
+                    # Fallback for columns where neither h1, h2, nor a spanning h1 is found
+                    header_part = f"unnamed_{i}"
+            # If h1_val is not empty but h2_val is (e.g., "No.", "Risk Category" without subheaders),
+            # `header_part = effective_h1` correctly assigns the h1 value.
+
+        final_headers_temp.append(header_part)
+
+    # Convert generated header parts to snake_case and ensure uniqueness of keys.
+    final_snake_case_headers = []
+    seen_keys = {}
+    for h_text in final_headers_temp:
+        snake_key = clean_and_snake_case_header(h_text)
+        
+        original_snake_key = snake_key
+        count = 1
+        # If a generated snake_key is a duplicate, append a counter to make it unique.
+        while snake_key in seen_keys:
+            snake_key = f"{original_snake_key}_{count}"
+            count += 1
+        seen_keys[snake_key] = True
+        final_snake_case_headers.append(snake_key)
+
+    # --- Data row processing ---
+    json_output_lines = []
+    data_row_index = 1 # 1-based index for the output JSON lines
+
+    # Iterate through data rows, starting from FIRST_DATA_ROW_IDX
+    for line_num in range(FIRST_DATA_ROW_IDX, len(lines)):
+        row_cells = lines[line_num].split('\t')
+        
+        # Pad/truncate data cells to match the number of generated headers.
+        row_cells = (row_cells + [''] * num_cols)[:num_cols]
+
+        cleaned_cells = []
+        all_empty = True
+        for cell in row_cells:
+            # Clean each data cell: trim spaces, collapse internal newlines to a single space,
+            # and remove any double quotes that might wrap the content.
+            cleaned_cell = cell.strip().replace('\n', ' ').replace('"', '')
+            cleaned_cells.append(cleaned_cell)
+            if cleaned_cell:
+                all_empty = False
+        
+        # Drop rows where all columns are empty after cleaning
+        if all_empty:
+            continue
+
+        data_object = {}
+        for i in range(num_cols):
+            key = final_snake_case_headers[i]
+            value = cleaned_cells[i]
+            data_object[key] = value
+
+        # Construct the final JSON object for the line
+        json_obj = {
+            "sheet": sheet_name,
+            "row_index": data_row_index,
+            "data": data_object
+        }
+        # Append the JSON string to the output list, ensuring non-ASCII characters are preserved.
+        json_output_lines.append(json.dumps(json_obj, ensure_ascii=False))
+        data_row_index += 1
+
+    return "\n".join(json_output_lines)
+
+# Provided TSV content
+tsv_input = """
+การประเมินความเสี่ยงด้านความต่อเนื่องทางธุรกิจ	Unnamed: 1	Unnamed: 2	Unnamed: 3	Unnamed: 4	Unnamed: 5	Unnamed: 6	Unnamed: 7	Unnamed: 8	Unnamed: 9	Unnamed: 10	Unnamed: 11	Unnamed: 12	Unnamed: 13	Unnamed: 14	Unnamed: 15	Unnamed: 16	Unnamed: 17	Unnamed: 18	Unnamed: 19	Unnamed: 20	Unnamed: 21
+																					
+ผู้ประเมิน				ชื่อหน่วยงาน			วันที่ประเมิน														
+วิธีการประเมิน				ชื่อพื้นที่ประเมิน			ทบทวนครั้งที่														
+																					
+No.	"Crisis Senario
+ภาวะวิกฤต"		"Risk Category
+ประเภทความเสี่ยง"	"Impact Type
+ประเภทผลกระทบ"	"Posible Risk
+ความเสี่ยงที่เป็นไปได้"	"Existing Control 
+มาตรการควบคุมที่มีอยู่"	Risk Assessment							"Mitigation Plan
+(new countermeasure to reduce threats)"	Time Frame		Responsible Person	Target			
+							I	L	R	R	MTPD	RTO	MBCO		From	To		I	L	R	R
+1	ไม่มีก๊าซธรรมชาติเนื่องจากแท่นขุดเจาะหยุดการผลิต (No fuel (Natural Gas)) และกรณีท่อก๊าซภายนอกชำรุดเนื่องจากเกิดอุบัติเหตุทางถนน             		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	"1. ไม่สามารถทราบปริมาณเชื้อเพลิง ที่จะนำมาผลิตกระแสไฟฟ้าได้
+2. ไม่สามารถผลิตไฟฟ้า และไอน้ำส่งให้กับลูกค้าได้
+3. สูญเสียรายได้"	"1. ติดตามสถานการณ์ คุณภาพและปริมาณ ก๊าซธรรมชาติ ผ่าน SMS
+2. แจ้ง PTT เพื่อใช้มาตราการแผนสำรองปริมาณ LNG ที่ PTT. เตรียมการไว้
+3. ติดต่อ PTT เพื่อให้ช่วยจัดส่งก๊าซธรรมชาติอย่างเร่งด่วน
+4. ดำเนินการซ่อมโดยทีม PTT"	4	1	E4	E4	 	24 ชม	1	"1.ทำระบบไฟฟ้าส่งจ่ายจาก GLOW มาจ่ายให้กับลูกค้าแทน    
+2.ทำระบบท่อไอน้ำจาก GLOW มาจ่ายให้กับลูกค้า"	Jan	Dec	Engineering	3	1	M11	M11
+2	ไม่มีน้ำ  (No water) กรณีภัยแล้งและท่อน้ำภายนอกชำรุด             		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	"1. ไม่สามารถผลิตกระแสไฟฟ้าได้
+2. ไม่สามารถผลิตน้ำอุตสาหกรรม ใช้ในกระบวนการผลิตไอน้ำ และไฟฟ้า และส่งให้กับลูกค้าได้
+3. สูญเสียรายได้"	"1. มีการติดตามสถานการณ์น้ำอยู่เสมอ
+2. ประเมินสถานการณ์น้ำ เพื่อกรณีสุดวิสัยจำเป็นต้อง Shutdown ระบบ 
+3.มีถังเก็บกักน้ำสำรอง เพื่อเก็บไว้ใช้
+4. แจ้งลูกค้าหากไม่สามารถจ่ายน้ำ เพื่อลดการใช้น้ำ
+5.ต่อท่อระบบน้ำCUP1-CUP3--GLOW ให้เป็นระบบเครือข่าย"	4	1	E4	E4	24 ชม	24 ชม	1	"1.ปรับลดปริมาณการใช้น้ำในกระบวนการผลิต
+2.พิจารณาหาแหล่งน้ำสำรอง เช่น รถขนส่งน้ำจากภายนอก
+3.หาแหล่งน้ำดิบเพิ่มอีกแหล่ง เช่น จากบริษัท EAST WATER         
+"	Jan	Dec	Operation	3	1	M11	M11
+3	Emergency Cases ไฟใหม้ระบบการผลิต          		Operational Management	B - ประสิทธิผลของกระบวนการ	"1.ไม่สามารถผลิตกระแสไฟฟ้าส่งให้กับลูกค้าได้
+2.ไม่สามารถผลิตไอน้ำ ส่งให้แก่ลูกค้าได้
+3.ไม่สามารถผลิต น้ำอุตสาหกรรมเพื่อใช้เอง และส่งผ่านให้กับลูกค้าได้
+4.สูญเสียรายได้"	"1.มีการจัดทีมซ้อมแผนฉุกเฉินประจำปี โดยเมื่อเกิดเหตุ มีการแจ้งโดยเสียงตามสาย ประเมินสถานการณ์และอพยพผู้ไม่เกี่ยวข้องไปยังจุดรวมพล
+2. ตัดแยกระบบเพื่อไม่ให้เกิดการลุกลามและทำให้อุปกรณ์อื่นๆเสียหาย
+3. มีการแจ้งเตือนชุมชมโดย CSR เมื่อมีควันจากไฟไหม้
+4. มีทดสอบอุปกรณ์แจ้งเตือนเหตุเพลิงไหม้ และอุปกรณ์ดับเพลิงอย่างเป็นประจำ
+5. มีการตรวจสอบความพร้อมและสภาพของเครื่องจักร โดยพนักงานเดินเครื่อง และพนักงานซ่อมบำรุงป็นประจำอย่างต่อเนื่อง
+6.เพิ่มทักษะให้กับพนักงานโดยการส่งไปอบรมการดับเพลิง ภายนอก
+7. รับไฟฟ้าจากEGAT
+'8.มีระบบ PMC ควบคุมระบบจ่ายไฟ และระบบ Shedding ก็นีที่ไฟไม่พอ เพื่อให้ระบบเดินได้ต่อเนื่อง
+9.ส่งทีม safety ไปอบรมดับเพลิงขั้นสูง"	4	1	E4	E4	24 ชม	24 ชม	1	"1.ทำสัญญา NPC S&E ในการจัดจ้าง รปภ. เป็น Fireman และรถดับเพลิงในกรณีฉุกเฉิน
+2.มีผู้ชำนาญการเรื่องการดับเพลิง ประจำบริษัท เพื่อแนะนำและจัดฝึกอบรมภายใน"	Jan	Dec	SSHE	3	1	M11	M11
+4	ระบบสายส่งชำรุด เกิดจากสายส่งขาด/ระเบิดเนื่องจากการลัดวงจร         		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	"1. ไม่สามารถส่งกระแสไฟฟ้าได้
+2. สูญเสียรายได้"	"1.มีการตรวจสอบอุปกรณ์ป้องกัน โดยพนักงานเดินเครื่อง และสายส่งโดยทีมงานซ่อมบำรุง อย่างประจำ
+2. มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายไฟฟ้ารายปี
+3. มีแผนการตรวจสอบระบบส่งจ่ายไฟฟ้าตามระยะเวลาที่กำหนด
+4.มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน
+5.จัดเตรียมสายไฟฟ้าสำรองไว้เปลี่ยนในกรณีเกิดเหตุฉุกเฉิน "	4	1	E4	E4	7 วัน	7 วัน	1	"1.ให้มีทีมซ่อมบำรุง และชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.ให้มีทีม ซ่อมสายส่ง ตลอด24ชม.
+"	Jan	Dec	Maintenance	3	1	M11	M11
+5	ระบบท่อส่งไอน้ำชำรุด เนื่องจากอุบัติเหตุทางถนนทำให้ท่อขาด		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	"1. ไม่สามารถส่งไอน้ำได้
+2. ไม่สามารถส่งไอน้ำให้กับลูกค้าได้
+3. กระบวนการผลิตและส่งไอน้ำเกิดการหยุดชะงักได้
+4. สูญเสียรายได้"	"1.ติดตั้งอุปกรณ์ป้องกันความเสียหายที่มีโอกาสเกิดกับระบบเชื่อมต่อ เช่น Barrior กันรถชน
+2. มีแผนการซ่อมบำรุงรักษาระบบส่งจ่ายไอน้ำรายปี
+3. มีแผนการตรวจสอบระบบส่งจ่ายไอน้ำตามระยะเวลาที่กำหนด
+4.มีทีมปฏิบัติการในกรณีฉุกเฉิน (on-call) ตลอด 24 ชม. สำหรับงานซ่อมเร่งด่วน
+5.จัดเตรียม อะไหล่ที่ไว้ใช้ซ่อมท่อ ให้พร้อม พร้อมทีม ซ่อม online stop leak
+6.มีการประสานกับ Supplier ให้พร้อมกับการซ่อมระบบท่อ ตลอด 24 ชั่วโมง"	4	1	E4	E4	4 วัน	3 วัน	1	"1.ให้มีทีมซ่อมบำรุงชำนาญเฉพาะทาง ประสานงานกับทาง Vender และมีการเตรียมชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อใช้งานและไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall
+2.ให้มีทีมซ่อมสายส่งของ Vender (Contactor)ตลอด24ชม."	Jan	Dec	Maintenance	3	1	M11	M11
+6	เครื่องจักรสำคัญเสียหาย กรณี UPS ไม่สามารถจ่ายกระแสไฟฟ้าเนื่องจากอุปกรณ์ภายในเสียหายต่อระบบSubstation /GIS /TR เกิดการลัดวงจร       		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	"1.ไม่สามารถขนานเครื่องเข้าระบบได้ ทำให้ไม่สามารถส่งมอบผลิตภัณฑ์ให้ลูกค้า
+2. สูญเสียรายได้
+3.ไม่สามารถส่งมอบผลิตภัณฑ์ให้กับลูกค้าได้
+4.ระบบเครื่องจักรการผลิตหยุดชะงัก"	"1. มีแผนซ่อมบำรุงรักษาประจำปี/ ประจำเดือน โดยบริษัทผู้ผลิต
+2. มีการติดตั้งอุปกรณ์สำรอง UPS Redundant
+3. มีการจด log sheet เพื่อประเมินค่าของอุปกรณ์ว่าผิดปกติหรือไม่และ Vitual check ขณะทำการจด log sheet
+4. มีระบบควบคุมอัตโนมัติ (Emergency) และระบบป้องกันอุปกรณ์(Protection)) เพื่อป้องกันเครื่องจักรเสียหาย "	4	1	E4	E4	1 วัน	1 ชม	1	"1.ให้มีทีมซ่อมบำรุงชำนาญเฉพาะทาง ประสานงานกับทาง Vender และมีการเตรียมชิ้นส่วนอะไหล่ ตลอด24 ชม. เพื่อใช้งานและไม่ต้องเสียเวลาในการรอคอย ในขณะที่ตาม oncall 
+2.ให้มีทีมซ่อมสายส่งของ Vender (Contactor) ตลอด24ชม."	Jan	Dec	Maintenance	3	1	M11	M11
+7	ระบบเทคโนโลยีสารสนเทศไม่สามารถใช้งานการโจมตีทางไซเบอร์  (Cyber Attack)           		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	"1.ไม่สามารถเข้าใช้งานระบบงานและ Application ที่สำคัญได้
+2.ไม่สามารถทำธุรกรรมทางการเงินผ่านระบบสารสนเทศได้
+3.มีผลกระทบต่อชื่อเสียงของบริษัท"	"1.มีการติดตั้ง Software ในการป้องกันไวรัสโจมตี 
+2.มีการเฝ้าระวังการโจมตีทาง Cyber จาก PTT Digital ตลอด 24 ชม
+3.ทบทวนรายงานผลการตรวจสอบประสิทธิภาพการทำงานประจำวัน "	4	1	E4	E4	1 วัน	1 วัน	1	"1.งดทำธุรกรรมทางการเงินผ่านระบบเทคโนโลยีสารสนเทศทั้งหมด 
+2.สื่อสารให้คนที่ได้รับผลกระทบทราบ ให้ใช้ระบบ Manual 
+3.ปิดระบบ IT ทั้งหมด จนกว่าจะดำเนินการแก้ไขเสร็จ"	Jan	Dec	ICT	3	1	M11	M11
+8	สายส่งไฟฟ้า 115 KV PEA /EGAT ชำรุด ไม่สามารถจ่ายไฟมายัง GPSC ได้เป็นระยะเวลานานเกิน 24 ชั่วโมง		Operational Management	6.กระบวนการทางธุรกิจและการปฏิบัติการ	1.Plant Blackout ไม่สามารถทำการผลิตได้	"1.มีระบบป้องกัน Relay protection และมีการตรวจสอบตามระยะเวลาที่กำหนด 
+2.ออกแบบให้ระบบสามารถเดินเครื่องแบบ Icelanding
+3.มีการตรวจวัดความร้อนของสายส่ง
+4.มีทีม Hot line oncall 24 hrs.
+5.มีระบบในการรับไฟฟ้าได้ 2 แหล่งได้แก่ Sub บ้านฉ่าง และ มาบตาพุต"	3	1	M11	M11	1 วัน	1 วัน	1	"1.มีการแจ้งประสานงานกับ PEA / EGATกรณีพบความผิดปกติของสายส่ง
+"	Jan	Dec	Maintenance	2	1	L14	L14
+"""
+
+# Convert the TSV to JSON Lines
+json_output = process_tsv_to_json_lines(tsv_input, sheet_name="3.RA_Crisis")
+
+# Print the JSON Lines output
+print(json_output)
